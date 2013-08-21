@@ -1,0 +1,12 @@
+Very draft zfs port into zerovm.
+- toolchain must be compiled with support of 4K size for memory page, this requirement my be pruned in the future;
+- currently zfs-port forces an mmap pseudo emulation, due to bug in glibc memalign which can't allocate continuous sequences of memory pages;
+- compile & run: cd src; make clean all; cd cmd/ztest; make clean all
+
+TODO:
+- Adopt multi-threaded architecture to single threaded;
+- Add to zrt new custom mmap allocator and integrate umem memory manager into zrt instead of existing in glibc;
+- Complete ztest app & pjd testing suite;
+- Reduce vdev label size and move it from beginning of file to the end in order to get full COW filesystem.
+- Integrate reduced zfs engine into zrt via MountsInterface;
+

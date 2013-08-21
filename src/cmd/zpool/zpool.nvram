@@ -1,0 +1,17 @@
+###########################################################
+# ZRT nvram file, setup cmd line args, environment vars   #
+###########################################################
+[env]
+
+[args]
+args=zpool.nexe create file /dev/zfspool -f
+
+[mapping]
+channel=/dev/zfspool, mode=file #REGULAR FILE
+channel=/dev/trace.unparsed, mode=char
+
+[time]
+seconds=1337012520
+
+[debug]
+verbosity=4

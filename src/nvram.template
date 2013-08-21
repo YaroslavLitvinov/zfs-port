@@ -1,0 +1,9 @@
+[mapping]
+channel=/dev/ztest.0a,       mode=file
+channel=/dev/trace.unparsed, mode=char
+
+[time]
+seconds={SECONDS}
+
+[debug]
+verbosity={VERBOSITY}
