@@ -400,11 +400,11 @@ int
 dsl_pool_sync_context(dsl_pool_t *dp)
 {
 #ifdef __native_client__
-    return -1;
-#else
+    if ( dp == NULL ) return 0;
+    else
+#endif //__native_client__
 	return (curthread == dp->dp_tx.tx_sync_thread ||
 	    spa_get_dsl(dp->dp_spa) == NULL);
-#endif
 }
 
 uint64_t

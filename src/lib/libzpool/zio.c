@@ -883,15 +883,6 @@ zio_issue_async(zio_t *zio)
 	return (ZIO_PIPELINE_STOP);
 }
 
-#ifdef __native_client__
-extern void 
-run_zio_task_now(zio_t *zio)
-{
-    taskq_thread(zio->io_spa->spa_zio_intr_taskq[zio->io_type]);
-    taskq_thread(zio->io_spa->spa_zio_issue_taskq[zio->io_type]);
-}
-#endif 
-
 /*
  * ==========================================================================
  * I/O pipeline interlocks: parent/child dependency scoreboarding
@@ -953,7 +944,10 @@ zio_notify_parent(zio_t *zio, uint32_t stage, uint64_t *countp)
 			zio_add_failed_vdev(pio, zio);
 	}
 	ASSERT3U(*countp, >, 0);
-	if (--*countp == 0 && pio->io_stalled == stage) {
+/* #ifdef __native_client__ */
+/* 	pio->io_stalled = stage; */
+/* #endif //__native_client__ */
+	if (--*countp == 0 && pio->io_stalled == stage ) {
 		pio->io_stalled = 0;
 		mutex_exit(&pio->io_lock);
 		zio_execute(pio);
@@ -2111,6 +2105,9 @@ zio_execute(zio_t *zio)
 		ASSERT(zio->io_stage <= ZIO_STAGE_DONE);
 		ASSERT(zio->io_stalled == 0);
 
+#ifdef ZVM_IO_DEBUG
+		printf("zio_execute zio_pipeline[zio->io_stage=%d] \n", zio->io_stage);
+#endif
 		rv = zio_pipeline[zio->io_stage](zio);
 
 		if (rv == ZIO_PIPELINE_STOP)

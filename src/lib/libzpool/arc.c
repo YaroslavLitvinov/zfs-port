@@ -1487,11 +1487,7 @@ arc_evict(arc_state_t *state, spa_t *spa, int64_t bytes, boolean_t recycle,
 		    ab_prev && ab_prev->b_size == bytes)
 			continue;
 		hash_lock = HDR_LOCK(ab);
-#ifdef __native_client__
-		have_lock=0;
-#else
 		have_lock = MUTEX_HELD(hash_lock);
-#endif
 		if (have_lock || mutex_tryenter(hash_lock)) {
 			ASSERT3U(refcount_count(&ab->b_refcnt), ==, 0);
 			ASSERT(ab->b_datacnt > 0);

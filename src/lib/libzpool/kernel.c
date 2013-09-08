@@ -112,11 +112,9 @@ kstat_delete(kstat_t *ksp)
 void
 zmutex_init(kmutex_t *mp)
 {
-    //#ifdef ZVM_ENABLE
-	mp->m_owner = NULL;
-	mp->initialized = B_TRUE;
-	(void) _mutex_init(&mp->m_lock, USYNC_THREAD, NULL);
-	//#endif
+    mp->m_owner = NULL;
+    mp->initialized = B_TRUE;
+    (void) _mutex_init(&mp->m_lock, USYNC_THREAD, NULL);
 }
 
 void
@@ -174,14 +172,10 @@ mutex_exit(kmutex_t *mp)
 void *
 mutex_owner(kmutex_t *mp)
 {
-    //#ifdef ZVM_ENABLE
 #ifndef __native_client__
 	ASSERT(mp->initialized == B_TRUE);
 #endif
 	return (mp->m_owner);
-/* #else */
-/* 	return NULL; */
-/* #endif */
 }
 
 /*
@@ -205,13 +199,11 @@ rw_init(krwlock_t *rwlp, char *name, int type, void *arg)
 void
 rw_destroy(krwlock_t *rwlp)
 {
-    //#ifdef ZVM_ENABLE
 	rwlock_destroy(&rwlp->rw_lock);
 	zmutex_destroy(&rwlp->mutex);
 	rwlp->rw_owner = (void *)-1UL;
 	rwlp->initialized = B_FALSE;
 	rwlp->thr_count = -2;
-	//#endif
 }
 
 void
@@ -255,8 +247,9 @@ rw_exit(krwlock_t *rwlp)
 #ifndef __native_client__
 	ASSERT(rwlp->initialized == B_TRUE);
 	ASSERT(rwlp->rw_owner != (void *)-1UL);
+#endif
 
-	if(rwlp->rw_owner == curthread) {
+	if( rwlp->rw_owner == curthread) {
 		/* Write locked */
 		ASSERT(rwlp->thr_count == -1);
 		rwlp->thr_count = 0;
@@ -270,7 +263,6 @@ rw_exit(krwlock_t *rwlp)
 		mutex_exit(&rwlp->mutex);
 	}
 	VERIFY(rw_unlock(&rwlp->rw_lock) == 0);
-#endif //ZVM_ENABLE
 }
 
 int
@@ -327,15 +319,11 @@ rw_tryupgrade(krwlock_t *rwlp)
 
 int rw_lock_held(krwlock_t *rwlp)
 {
-    //#ifdef ZVM_ENABLE
 	int ret;
 	mutex_enter(&rwlp->mutex);
 	ret = rwlp->thr_count != 0;
 	mutex_exit(&rwlp->mutex);
 	return ret;
-/* #else */
-/* 	return 0; */
-/* #endif  */
 }
 
 /*

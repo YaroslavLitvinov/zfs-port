@@ -297,13 +297,3 @@ taskq_member(taskq_t *tq, kthread_t *t)
 
 	return (0);
 }
-
-#ifdef __native_client__
-extern void 
-run_pending_zvm_tasks(){
-    struct taskq *t;
-    while( (t=zvm_task_next()) ){
-	taskq_thread( t );
-    }
-}
-#endif

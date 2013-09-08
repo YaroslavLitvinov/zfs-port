@@ -32,7 +32,6 @@
 #include "libnvpair.h"
 
 
-#ifdef ZVM_COW
 /*
  * libnvpair - A tools library for manipulating <name, value> pairs.
  *
@@ -618,5 +617,3 @@ nvpair_value_match(nvpair_t *nvp, int ai, char *value, char **ep)
 {
 	return (nvpair_value_match_regex(nvp, ai, value, NULL, ep));
 }
-
-#endif //ZVM_COW

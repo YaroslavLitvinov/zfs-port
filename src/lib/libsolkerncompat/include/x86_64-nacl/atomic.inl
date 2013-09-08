@@ -12,7 +12,6 @@
 #define ADD_DELTA(a_p, b)     *(a_p) += b
 #define ADD_DELTA_RETURN(a_p, b)     return (*(a_p) += b)
 #define CAS_RETURN(a_p,b,c)   return *(a_p) == b? *(a_p)=c : *(a_p)
-#define CAS_RETURN_P(a_p,b,c)  return (a_p) == (b)? (a_p)=(c) : (a_p)
 #define BITWISE_OR(a_p, b)    *(a_p) |= b
 #define BITWISE_AND(a_p, b)    *(a_p) &= b
 #define INC(a_p)              ++*(a_p)
@@ -88,7 +87,7 @@ INLINE uint16_t atomic_cas_16(volatile uint16_t *a, uint16_t b, uint16_t c) { CA
 INLINE ushort_t atomic_cas_ushort(volatile ushort_t *a, ushort_t b, ushort_t c) { CAS_RETURN(a,b,c); }
 INLINE uint32_t atomic_cas_32(volatile uint32_t *a, uint32_t b, uint32_t c) { CAS_RETURN(a,b,c); }
 INLINE uint_t atomic_cas_uint(volatile uint_t *a, uint_t b, uint_t c) { CAS_RETURN(a,b,c);  }
-INLINE void *atomic_cas_ptr(volatile void *a, void *b, void *c) { CAS_RETURN_P(a,b,c); }
+INLINE void *atomic_cas_ptr(volatile void *a, void *b, void *c) { CAS_RETURN( (uint64_t**)a,b,c); }
 INLINE ulong_t atomic_cas_ulong(volatile ulong_t *a, ulong_t b, ulong_t c) { CAS_RETURN(a,b,c); }
 INLINE uint64_t atomic_cas_64(volatile uint64_t *a, uint64_t b, uint64_t c) { CAS_RETURN(a,b,c); }
 

@@ -48,9 +48,7 @@ dnode_increase_indirection(dnode_t *dn, dmu_tx_t *tx)
 
 	/* this dnode can't be paged out because it's dirty */
 	ASSERT(dn->dn_phys->dn_type != DMU_OT_NONE);
-#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&dn->dn_struct_rwlock));
-#endif
 	ASSERT(new_level > 1 && dn->dn_phys->dn_nlevels > 0);
 
 	db = dbuf_hold_level(dn, dn->dn_phys->dn_nlevels, 0, FTAG);

@@ -24,8 +24,6 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
-
 #include <sys/debug.h>
 #include <sys/mutex.h>
 #include <sys/thread.h>
@@ -37,48 +35,49 @@
 void
 zmutex_init(kmutex_t *mp)
 {
-#ifdef ZVM_ENABLE
+#ifdef __native_client__
 	mp->m_owner = NULL;
-#ifdef DEBUG
+#else
+	VERIFY(pthread_mutex_init(&mp->m_lock, NULL) == 0);
 	pthread_mutexattr_t attr;
 	VERIFY(pthread_mutexattr_init(&attr) == 0);
 	VERIFY(pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK) == 0);
 	VERIFY(pthread_mutex_init(&mp->m_lock, &attr) == 0);
 	VERIFY(pthread_mutexattr_destroy(&attr) == 0);
-#else
-	VERIFY(pthread_mutex_init(&mp->m_lock, NULL) == 0);
 #endif
-#endif //ZVM_ENABLE
 }
 
 void
 zmutex_destroy(kmutex_t *mp)
 {
-#ifdef ZVM_ENABLE
+#ifndef __native_client__
 	ASSERT(mp->m_owner == NULL);
 	VERIFY(pthread_mutex_destroy(&mp->m_lock) == 0);
 	mp->m_owner = (void *)-1UL;
-#endif //ZVM_ENABLE
+#endif //__native_client__
 }
 
 void
 mutex_enter(kmutex_t *mp)
 {
-#ifdef ZVM_ENABLE
+#ifndef __native_client__
 	ASSERT(mp->m_owner != (void *)-1UL);
 	ASSERT(mp->m_owner != curthread);
 	VERIFY(pthread_mutex_lock(&mp->m_lock) == 0);
 	ASSERT(mp->m_owner == NULL);
+#endif //__native_client__
 	mp->m_owner = curthread;
-#endif //ZVM_ENABLE
 }
 
 int
 mutex_tryenter(kmutex_t *mp)
 {
-#ifdef ZVM_ENABLE
 	ASSERT(mp->m_owner != (void *)-1UL);
+#ifdef __native_client__
+	int ret = 0;
+#else
 	int ret = pthread_mutex_trylock(&mp->m_lock);
+#endif //__native_client__
 
 	if (ret == 0) {
 		ASSERT(mp->m_owner == NULL);
@@ -88,30 +87,21 @@ mutex_tryenter(kmutex_t *mp)
 		VERIFY(ret == EBUSY);
 		return (0);
 	}
-#else
-	return 0;
-#endif //ZVM_ENABLE
 }
 
 void
 mutex_exit(kmutex_t *mp)
 {
-#ifdef ZVM_ENABLE
 	ASSERT(mutex_owner(mp) == curthread);
 	mp->m_owner = NULL;
+#ifndef __native_client__
 	VERIFY(pthread_mutex_unlock(&mp->m_lock) == 0);
-#endif //ZVM_ENABLE
+#endif
 }
 
 void *
 mutex_owner(kmutex_t *mp)
 {
-#ifdef ZVM_ENABLE
-	return (mp->m_owner);
-#else
-	assert(0);
-	return NULL;
-#endif
+    return (mp->m_owner);
 }
 
-#endif //ZVM_COW

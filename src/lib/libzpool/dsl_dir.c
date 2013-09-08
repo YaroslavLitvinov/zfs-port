@@ -310,9 +310,14 @@ dsl_dir_open_spa(spa_t *spa, const char *name, void *tag,
 
 	dprintf("%s\n", name);
 
+#ifdef __native_client__
+	strcpy(buf, "ztest");
+	next = NULL;
+#else
 	err = getcomponent(name, buf, &next);
 	if (err)
 		return (err);
+#endif
 	if (spa == NULL) {
 		err = spa_open(buf, &spa, FTAG);
 		if (err) {

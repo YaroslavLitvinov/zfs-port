@@ -360,9 +360,10 @@ vdev_alloc(spa_t *spa, vdev_t **vdp, nvlist_t *nv, vdev_t *parent, uint_t id,
 		if (nvlist_lookup_uint64(nv, ZPOOL_CONFIG_ID, &label_id) ||
 		    label_id != id)
 			return (EINVAL);
-
+#ifndef __native_client__
 		if (nvlist_lookup_uint64(nv, ZPOOL_CONFIG_GUID, &guid) != 0)
 			return (EINVAL);
+#endif
 	} else if (alloctype == VDEV_ALLOC_SPARE) {
 		if (nvlist_lookup_uint64(nv, ZPOOL_CONFIG_GUID, &guid) != 0)
 			return (EINVAL);
@@ -2130,7 +2131,10 @@ vdev_config_dirty(vdev_t *vd)
 	 * (which holds the lock as reader).  There's only one sync thread,
 	 * so this is sufficient to ensure mutual exclusion.
 	 */
-	ASSERT(spa_config_held(spa, RW_WRITER) ||
+	ASSERT(
+             //#ifndef __native_client__
+	       spa_config_held(spa, RW_WRITER) ||
+	       //#endif //__native_client__
 	    dsl_pool_sync_context(spa_get_dsl(spa)));
 
 	if (vd == rvd) {

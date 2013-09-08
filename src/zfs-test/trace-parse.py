@@ -44,14 +44,61 @@ def parse_file(finname, foutname):
 	fr.close()
 	fw.close()
 
+def parse_file_hierarchy(finname, foutname):
+	level = 0
+	prevname = ""
+	count=0
+
+	fr = file(finname, 'r')
+	fw = file(foutname, 'w')
+
+	s = fr.readline()
+	while s != '':
+		words = s.rstrip().split(' ')
+
+		for i in range(len(words)):
+			if words[i].startswith('0x'):
+				try:
+					name = sym_hash[int(words[i], 16)]
+				except KeyError:
+					name = 'unknown'
+
+		if words[0]=="enter":
+			# Check if new name compared to previous input
+			if prevname==name:
+				# was the counter counting?
+				if count==0:
+					# print function name
+					fw.write('\n    '+level*'|   '+name,)
+				count=count+1
+			else:
+				# New name received. Was the counter counting?
+				if count>0:
+					fw.write("(total: %d times)" % (count+1),)
+					# re-initialize counter
+					count=0
+				fw.write('\n    '+level*'|   '+name,)
+			level=level+1
+			prevname = name
+		else:
+			level=level-1
+
+		s = fr.readline()
+
+	fr.close()
+	fw.close()
+
+
 sym_hash = load_symbols(sys.argv[1])
 
 for finname in glob.glob(FILES):
 	assert finname.endswith('.unparsed')
 
 	foutname = finname.replace('.unparsed', '')
+	foutname2 = finname.replace('.unparsed', '.heirarchy')
 	print foutname
 
 	parse_file(finname, foutname)
+	parse_file_hierarchy(finname, foutname2)
 
 	os.unlink(finname)

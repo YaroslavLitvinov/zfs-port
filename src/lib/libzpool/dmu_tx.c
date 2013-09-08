@@ -304,7 +304,9 @@ dmu_tx_hold_write(dmu_tx_t *tx, uint64_t object, uint64_t off, int len)
 {
 	dmu_tx_hold_t *txh;
 
+#ifndef __native_client__
 	ASSERT(tx->tx_txg == 0);
+#endif
 	ASSERT(len < DMU_MAX_ACCESS);
 	ASSERT(len == 0 || UINT64_MAX - off >= len - 1);
 
@@ -473,7 +475,9 @@ dmu_tx_hold_free(dmu_tx_t *tx, uint64_t object, uint64_t off, uint64_t len)
 	int err, shift;
 	zio_t *zio;
 
+#ifndef __native_client__
 	ASSERT(tx->tx_txg == 0);
+#endif
 
 	txh = dmu_tx_hold_object_impl(tx, tx->tx_objset,
 	    object, THT_FREE, off, len);
@@ -542,7 +546,9 @@ dmu_tx_hold_zap(dmu_tx_t *tx, uint64_t object, int add, char *name)
 	uint64_t nblocks;
 	int epbs, err;
 
+#ifndef __native_client__
 	ASSERT(tx->tx_txg == 0);
+#endif
 
 	txh = dmu_tx_hold_object_impl(tx, tx->tx_objset,
 	    object, THT_ZAP, add, (uintptr_t)name);
@@ -624,7 +630,9 @@ dmu_tx_hold_bonus(dmu_tx_t *tx, uint64_t object)
 {
 	dmu_tx_hold_t *txh;
 
+#ifndef __native_client__
 	ASSERT(tx->tx_txg == 0);
+#endif
 
 	txh = dmu_tx_hold_object_impl(tx, tx->tx_objset,
 	    object, THT_BONUS, 0, 0);
@@ -636,7 +644,9 @@ void
 dmu_tx_hold_space(dmu_tx_t *tx, uint64_t space)
 {
 	dmu_tx_hold_t *txh;
+#ifndef __native_client__
 	ASSERT(tx->tx_txg == 0);
+#endif
 
 	txh = dmu_tx_hold_object_impl(tx, tx->tx_objset,
 	    DMU_NEW_OBJECT, THT_SPACE, space, 0);
@@ -656,7 +666,9 @@ dmu_tx_holds(dmu_tx_t *tx, uint64_t object)
 	 * dn_holds.  Otherwise, we'd be counting dn_holds, but
 	 * dn_tx_holds could be 0.
 	 */
+#ifndef __native_client__
 	ASSERT(tx->tx_txg != 0);
+#endif
 
 	/* if (tx->tx_anyobj == TRUE) */
 		/* return (0); */
@@ -678,7 +690,9 @@ dmu_tx_dirty_buf(dmu_tx_t *tx, dmu_buf_impl_t *db)
 	int match_object = FALSE, match_offset = FALSE;
 	dnode_t *dn = db->db_dnode;
 
+#ifndef __native_client__
 	ASSERT(tx->tx_txg != 0);
+#endif
 	ASSERT(tx->tx_objset == NULL || dn->dn_objset == tx->tx_objset->os);
 	ASSERT3U(dn->dn_object, ==, db->db.db_object);
 
@@ -691,7 +705,11 @@ dmu_tx_dirty_buf(dmu_tx_t *tx, dmu_buf_impl_t *db)
 
 	for (txh = list_head(&tx->tx_holds); txh;
 	    txh = list_next(&tx->tx_holds, txh)) {
-		ASSERT(dn == NULL || dn->dn_assigned_txg == tx->tx_txg);
+		ASSERT(dn == NULL 
+#ifndef __native_client__
+		       || dn->dn_assigned_txg == tx->tx_txg
+#endif //__native_client__
+		       );
 		if (txh->txh_dnode == dn && txh->txh_type != THT_NEWOBJECT)
 			match_object = TRUE;
 		if (txh->txh_dnode == NULL || txh->txh_dnode == dn) {
@@ -771,7 +789,9 @@ dmu_tx_try_assign(dmu_tx_t *tx, uint64_t txg_how)
 	uint64_t memory, asize, fsize, usize;
 	uint64_t towrite, tofree, tooverwrite, tounref, tohold, fudge;
 
+#ifndef __native_client__
 	ASSERT3U(tx->tx_txg, ==, 0);
+#endif
 
 	if (tx->tx_err)
 		return (tx->tx_err);
@@ -815,7 +835,9 @@ dmu_tx_try_assign(dmu_tx_t *tx, uint64_t txg_how)
 			}
 			if (dn->dn_assigned_txg == 0)
 				dn->dn_assigned_txg = tx->tx_txg;
+#ifndef __native_client__
 			ASSERT3U(dn->dn_assigned_txg, ==, tx->tx_txg);
+#endif
 			(void) refcount_add(&dn->dn_tx_holds, tx);
 			mutex_exit(&dn->dn_mtx);
 		}
@@ -831,8 +853,10 @@ dmu_tx_try_assign(dmu_tx_t *tx, uint64_t txg_how)
 	 * NB: This check must be after we've held the dnodes, so that
 	 * the dmu_tx_unassign() logic will work properly
 	 */
+#ifndef __native_client__
 	if (txg_how >= TXG_INITIAL && txg_how != tx->tx_txg)
 		return (ERESTART);
+#endif
 
 	/*
 	 * If a snapshot has been taken since we made our estimates,
@@ -894,7 +918,9 @@ dmu_tx_unassign(dmu_tx_t *tx)
 		if (dn == NULL)
 			continue;
 		mutex_enter(&dn->dn_mtx);
+#ifndef __native_client__
 		ASSERT3U(dn->dn_assigned_txg, ==, tx->tx_txg);
+#endif
 
 		if (refcount_remove(&dn->dn_tx_holds, tx) == 0) {
 			dn->dn_assigned_txg = 0;
@@ -903,10 +929,12 @@ dmu_tx_unassign(dmu_tx_t *tx)
 		mutex_exit(&dn->dn_mtx);
 	}
 
+#ifndef __native_client__
 	txg_rele_to_sync(&tx->tx_txgh);
 
 	tx->tx_lasttried_txg = tx->tx_txg;
 	tx->tx_txg = 0;
+#endif
 }
 
 /*
@@ -930,8 +958,10 @@ dmu_tx_assign(dmu_tx_t *tx, uint64_t txg_how)
 {
 	int err;
 
+#ifndef __native_client__
 	ASSERT(tx->tx_txg == 0);
 	ASSERT(txg_how != 0);
+#endif //__native_client__
 	ASSERT(!dsl_pool_sync_context(tx->tx_pool));
 
 	while ((err = dmu_tx_try_assign(tx, txg_how)) != 0) {
@@ -953,7 +983,9 @@ dmu_tx_wait(dmu_tx_t *tx)
 {
 	spa_t *spa = tx->tx_pool->dp_spa;
 
+#ifndef __native_client__
 	ASSERT(tx->tx_txg == 0);
+#endif
 
 	/*
 	 * It's possible that the pool has become active after this thread
@@ -998,7 +1030,9 @@ dmu_tx_commit(dmu_tx_t *tx)
 {
 	dmu_tx_hold_t *txh;
 
+#ifndef __native_client__
 	ASSERT(tx->tx_txg != 0);
+#endif
 
 	while (txh = list_head(&tx->tx_holds)) {
 		dnode_t *dn = txh->txh_dnode;
@@ -1008,7 +1042,9 @@ dmu_tx_commit(dmu_tx_t *tx)
 		if (dn == NULL)
 			continue;
 		mutex_enter(&dn->dn_mtx);
+#ifndef __native_client__
 		ASSERT3U(dn->dn_assigned_txg, ==, tx->tx_txg);
+#endif
 
 		if (refcount_remove(&dn->dn_tx_holds, tx) == 0) {
 			dn->dn_assigned_txg = 0;
@@ -1041,7 +1077,9 @@ dmu_tx_abort(dmu_tx_t *tx)
 {
 	dmu_tx_hold_t *txh;
 
+#ifndef __native_client__
 	ASSERT(tx->tx_txg == 0);
+#endif
 
 	while (txh = list_head(&tx->tx_holds)) {
 		dnode_t *dn = txh->txh_dnode;
@@ -1064,6 +1102,8 @@ dmu_tx_abort(dmu_tx_t *tx)
 uint64_t
 dmu_tx_get_txg(dmu_tx_t *tx)
 {
+#ifndef __native_client__
 	ASSERT(tx->tx_txg != 0);
+#endif
 	return (tx->tx_txg);
 }

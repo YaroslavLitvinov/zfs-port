@@ -103,11 +103,15 @@ taskq_dispatch(taskq_t *tq, task_func_t func, void *arg, uint_t tqflags)
 {
 	task_t *t;
 
-	if (taskq_now) {
+#ifndef __native_client__
+	if (taskq_now) 
+#endif //__native_client__
+	    {
 		func(arg);
 		return (1);
 	}
 
+#ifndef __native_client__
 	mutex_enter(&tq->tq_lock);
 	ASSERT(tq->tq_flags & TASKQ_ACTIVE);
 	if ((t = task_alloc(tq, tqflags)) == NULL) {
@@ -123,6 +127,7 @@ taskq_dispatch(taskq_t *tq, task_func_t func, void *arg, uint_t tqflags)
 	cv_signal(&tq->tq_dispatch_cv);
 	mutex_exit(&tq->tq_lock);
 	return (1);
+#endif //__native_client__
 }
 
 void
@@ -134,7 +139,12 @@ taskq_wait(taskq_t *tq)
 	mutex_exit(&tq->tq_lock);
 }
 
-static void *
+#ifdef __native_client__
+extern
+#else
+static
+#endif //__native_client__
+void *
 taskq_thread(void *arg)
 {
 	taskq_t *tq = arg;
@@ -193,14 +203,11 @@ taskq_create(const char *name, int nthreads, pri_t pri,
 			task_free(tq, task_alloc(tq, KM_SLEEP));
 		mutex_exit(&tq->tq_lock);
 	}
-
+#ifndef __native_client__
 	for (t = 0; t < nthreads; t++){
-#ifdef __native_client__
-	    taskq_thread(tq);
-#else
 	    pthread_create(&tq->tq_threadlist[t], NULL, taskq_thread, tq);
-#endif 
 	}
+#endif
 	return (tq);
 }
 

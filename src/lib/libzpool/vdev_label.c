@@ -432,8 +432,9 @@ vdev_inuse(vdev_t *vd, uint64_t crtxg, vdev_labeltype_t reason,
 	 * user has attempted to add the same vdev multiple times in the same
 	 * transaction.
 	 */
-	if (state != POOL_STATE_SPARE && state != POOL_STATE_L2CACHE &&
-	    txg == 0 && vdtxg == crtxg)
+	if (state != POOL_STATE_SPARE && state != POOL_STATE_L2CACHE
+	    && txg == 0 && vdtxg == crtxg
+	    )
 		return (B_TRUE);
 
 	/*
@@ -1039,6 +1040,7 @@ vdev_config_sync(vdev_t **svd, int svdcount, uint64_t txg)
 	zio_t *zio;
 	int flags = ZIO_FLAG_CONFIG_HELD | ZIO_FLAG_CANFAIL;
 
+	//#ifndef __native_client__
 	ASSERT(ub->ub_txg <= txg);
 
 	/*
@@ -1056,7 +1058,7 @@ vdev_config_sync(vdev_t **svd, int svdcount, uint64_t txg)
 		return;
 
 	ASSERT(txg <= spa->spa_final_txg);
-
+	//#endif //__native_client__
 	/*
 	 * Flush the write cache of every disk that's been written to
 	 * in this transaction group.  This ensures that all blocks

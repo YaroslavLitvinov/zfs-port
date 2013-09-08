@@ -456,9 +456,7 @@ spa_error_entry_compare(const void *a, const void *b)
 void
 spa_get_errlists(spa_t *spa, avl_tree_t *last, avl_tree_t *scrub)
 {
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&spa->spa_errlist_lock));
-#endif
 	bcopy(&spa->spa_errlist_last, last, sizeof (avl_tree_t));
 	bcopy(&spa->spa_errlist_scrub, scrub, sizeof (avl_tree_t));
 
@@ -1049,7 +1047,11 @@ spa_load(spa_t *spa, nvlist_t *config, spa_load_state_t state, int mosconfig)
 	 */
 	spa_config_enter(spa, RW_WRITER, FTAG);
 	spa->spa_ubsync.ub_version = version;
+#ifdef __native_client__
+	error = spa_config_parse(spa, &rvd, nvroot, NULL, ZVM_VDEV_ID, VDEV_ALLOC_LOAD);
+#else
 	error = spa_config_parse(spa, &rvd, nvroot, NULL, 0, VDEV_ALLOC_LOAD);
+#endif //__native_client__
 	spa_config_exit(spa, FTAG);
 
 	if (error != 0)
@@ -1462,12 +1464,10 @@ spa_open_common(const char *pool, spa_t **spapp, void *tag, nvlist_t **config)
 	 * up calling spa_open() again.  The real fix is to figure out how to
 	 * avoid dsl_dir_open() calling this in the first place.
 	 */
-	//#ifndef __native_client__
 	if (mutex_owner(&spa_namespace_lock) != curthread) {
 		mutex_enter(&spa_namespace_lock);
 		locked = B_TRUE;
 	}
-	//#endif
 
 	if ((spa = spa_lookup(pool)) == NULL) {
 		if (locked)
@@ -1945,7 +1945,11 @@ spa_create(const char *pool, nvlist_t *nvroot, nvlist_t *props,
 	 */
 	spa_config_enter(spa, RW_WRITER, FTAG);
 
+#ifdef __native_client__
+	error = spa_config_parse(spa, &rvd, nvroot, NULL, ZVM_VDEV_ID, VDEV_ALLOC_ADD);
+#else
 	error = spa_config_parse(spa, &rvd, nvroot, NULL, 0, VDEV_ALLOC_ADD);
+#endif
 
 	ASSERT(error != 0 || rvd != NULL);
 	ASSERT(error != 0 || spa->spa_root_vdev == rvd);
@@ -2229,7 +2233,9 @@ spa_import_common(const char *pool, nvlist_t *config, nvlist_t *props,
 }
 
 /* ZFSFUSE: not needed */
+#ifndef __native_client__
 #if 0
+#endif // __native_client__
 /*
  * Build a "root" vdev for a top level vdev read in from a rootpool
  * device label.
@@ -2441,7 +2447,9 @@ msg_out:
 
 	return (error);
 }
+#ifndef __native_client__
 #endif
+#endif // __native_client__
 
 /*
  * Import a non-root pool into the system.
@@ -3635,9 +3643,7 @@ spa_async_thread(spa_t *spa)
 	spa->spa_async_thread = NULL;
 	cv_broadcast(&spa->spa_async_cv);
 	mutex_exit(&spa->spa_async_lock);
-	//#ifndef __native_client__
 	thread_exit();
-	//#endif
 }
 
 void

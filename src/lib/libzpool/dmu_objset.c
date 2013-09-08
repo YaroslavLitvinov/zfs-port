@@ -259,7 +259,9 @@ dmu_objset_open_impl(spa_t *spa, dsl_dataset_t *ds, blkptr_t *bp,
 	}
 
 	osi->os_zil_header = osi->os_phys->os_zil_header;
+#ifndef DISABLE_ZIL
 	osi->os_zil = zil_alloc(&osi->os, &osi->os_zil_header);
+#endif //DISABLE_ZIL
 
 	for (i = 0; i < TXG_SIZE; i++) {
 #ifdef DEBUG
@@ -467,7 +469,9 @@ dmu_objset_evict(dsl_dataset_t *ds, void *arg)
 	ASSERT3P(list_head(&osi->os_meta_dnode->dn_dbufs), ==, NULL);
 
 	dnode_special_close(osi->os_meta_dnode);
+#ifndef DISABLE_ZIL
 	zil_free(osi->os_zil);
+#endif //DISABLE_ZIL
 
 	VERIFY(arc_buf_remove_ref(osi->os_phys_buf, &osi->os_phys_buf) == 1);
 	mutex_destroy(&osi->os_lock);
@@ -665,7 +669,9 @@ dmu_objset_destroy(const char *name)
 	    DS_MODE_OWNER|DS_MODE_READONLY|DS_MODE_INCONSISTENT, &os);
 	if (error == 0) {
 		dsl_dataset_t *ds = os->os->os_dsl_dataset;
+#ifndef DISABLE_ZIL
 		zil_destroy(dmu_objset_zil(os), B_FALSE);
+#endif
 
 		error = dsl_dataset_destroy(ds, os);
 		/*
@@ -751,8 +757,11 @@ dmu_objset_snapshot_one(char *name, void *arg)
 	 * so that we snapshot those changes.  zil_suspend does this as
 	 * a side effect.
 	 */
+#ifndef DISABLE_ZIL
 	err = zil_suspend(dmu_objset_zil(os));
-	if (err == 0) {
+	if (err == 0) 
+#endif //DISABLE_ZIL
+	    {
 		struct osnode *osn;
 		dsl_sync_task_create(sn->dstg, dsl_dataset_snapshot_check,
 		    dsl_dataset_snapshot_sync, os->os->os_dsl_dataset,
@@ -760,11 +769,12 @@ dmu_objset_snapshot_one(char *name, void *arg)
 		osn = kmem_alloc(sizeof (struct osnode), KM_SLEEP);
 		osn->os = os;
 		list_insert_tail(&sn->objsets, osn);
-	} else {
+	} 
+#ifndef DISABLE_ZIL
+else {
 		dmu_objset_close(os);
 	}
-
-	return (err);
+#endif //DISABLE_ZILreturn (err);
 }
 
 int
@@ -811,7 +821,9 @@ dmu_objset_snapshot(char *fsname, char *snapname, boolean_t recursive)
 out:
 	while (osn = list_head(&sn.objsets)) {
 		list_remove(&sn.objsets, osn);
+#ifndef DISABLE_ZIL
 		zil_resume(dmu_objset_zil(osn->os));
+#endif
 		dmu_objset_close(osn->os);
 		kmem_free(osn, sizeof (struct osnode));
 	}
@@ -949,8 +961,10 @@ dmu_objset_sync(objset_impl_t *os, zio_t *pio, dmu_tx_t *tx)
 	/*
 	 * Free intent log blocks up to this tx.
 	 */
+#ifndef DISABLE_ZIL
 	zil_sync(os->os_zil, tx);
 	os->os_phys->os_zil_header = os->os_zil_header;
+#endif //DISABLE_ZIL
 	zio_nowait(zio);
 }
 

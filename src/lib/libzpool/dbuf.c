@@ -352,13 +352,13 @@ dbuf_verify(dmu_buf_impl_t *db)
 			 * have the struct_rwlock.  XXX indblksz no longer
 			 * grows.  safe to do this now?
 			 */
-#ifndef __native_client__
+			//#ifndef __native_client__
 			if (RW_WRITE_HELD(&db->db_dnode->dn_struct_rwlock)) {
 				ASSERT3P(db->db_blkptr, ==,
 				    ((blkptr_t *)db->db_parent->db.db_data +
 				    db->db_blkid % epb));
 			}
-#endif
+			//#endif
 		}
 	}
 	if ((db->db_blkptr == NULL || BP_IS_HOLE(db->db_blkptr)) &&
@@ -469,11 +469,11 @@ dbuf_read_impl(dmu_buf_impl_t *db, zio_t *zio, uint32_t *flags)
 	arc_buf_t *pbuf;
 
 	ASSERT(!refcount_is_zero(&db->db_holds));
-#ifndef __native_client__
+
 	/* We need the struct_rwlock to prevent db_blkptr from changing. */
 	ASSERT(RW_LOCK_HELD(&dn->dn_struct_rwlock));
 	ASSERT(MUTEX_HELD(&db->db_mtx));
-#endif
+
 	ASSERT(db->db_state == DB_UNCACHED);
 	ASSERT(db->db_buf == NULL);
 
@@ -858,12 +858,12 @@ dbuf_new_size(dmu_buf_impl_t *db, int size, dmu_tx_t *tx)
 	arc_buf_t *buf, *obuf;
 	int osize = db->db.db_size;
 	arc_buf_contents_t type = DBUF_GET_BUFC_TYPE(db);
-#ifndef __native_client__
+	//#ifndef __native_client__
 	ASSERT(db->db_blkid != DB_BONUS_BLKID);
 
 	/* XXX does *this* func really need the lock? */
 	ASSERT(RW_WRITE_HELD(&db->db_dnode->dn_struct_rwlock));
-#endif
+	//#endif
 	/*
 	 * This call to dbuf_will_dirty() with the dn_struct_rwlock held
 	 * is OK, because there can be no other references to the db
@@ -1100,12 +1100,12 @@ dbuf_dirty(dmu_buf_impl_t *db, dmu_tx_t *tx)
 		 */
 		dnode_willuse_space(dn, -willfree, tx);
 	}
-#ifndef __native_client__
+	//#ifndef __native_client__
 	if (!RW_WRITE_HELD(&dn->dn_struct_rwlock)) {
 		rw_enter(&dn->dn_struct_rwlock, RW_READER);
 		drop_struct_lock = TRUE;
 	}
-#endif
+	//#endif
 	if (db->db_level == 0) {
 		dnode_new_blkid(dn, db->db_blkid, tx, drop_struct_lock);
 		ASSERT(dn->dn_maxblkid >= db->db_blkid);
@@ -1257,10 +1257,10 @@ dbuf_will_dirty(dmu_buf_impl_t *db, dmu_tx_t *tx)
 
 	ASSERT(tx->tx_txg != 0);
 	ASSERT(!refcount_is_zero(&db->db_holds));
-#ifndef __native_client__
+
 	if (RW_WRITE_HELD(&db->db_dnode->dn_struct_rwlock))
 		rf |= DB_RF_HAVESTRUCT;
-#endif
+
 	(void) dbuf_read(db, NULL, rf);
 	(void) dbuf_dirty(db, tx);
 }
@@ -1346,13 +1346,13 @@ dbuf_clear(dmu_buf_impl_t *db)
 
 	db->db_state = DB_EVICTING;
 	db->db_blkptr = NULL;
-#ifndef __native_client__
+	//#ifndef __native_client__
 	if (db->db_blkid != DB_BONUS_BLKID && MUTEX_HELD(&dn->dn_dbufs_mtx)) {
 		list_remove(&dn->dn_dbufs, db);
 		dnode_rele(dn, db);
 		db->db_dnode = NULL;
 	}
-#endif
+	//#endif
 	if (db->db_buf)
 		dbuf_gone = arc_buf_evict(db->db_buf);
 
@@ -1386,9 +1386,9 @@ dbuf_findbp(dnode_t *dn, int level, uint64_t blkid, int fail_sparse,
 	epbs = dn->dn_indblkshift - SPA_BLKPTRSHIFT;
 
 	ASSERT3U(level * epbs, <, 64);
-#ifndef __native_client__
+
 	ASSERT(RW_LOCK_HELD(&dn->dn_struct_rwlock));
-#endif
+
 	if (level >= nlevels ||
 	    (blkid > (dn->dn_phys->dn_maxblkid >> (level * epbs)))) {
 		/* the buffer has no parent yet */
@@ -1429,9 +1429,8 @@ dbuf_create(dnode_t *dn, uint8_t level, uint64_t blkid,
 {
 	objset_impl_t *os = dn->dn_objset;
 	dmu_buf_impl_t *db, *odb;
-#ifndef __native_client__
+
 	ASSERT(RW_LOCK_HELD(&dn->dn_struct_rwlock));
-#endif
 	ASSERT(dn->dn_type != DMU_OT_NONE);
 
 	db = kmem_cache_alloc(dbuf_cache, KM_SLEEP);
@@ -1566,9 +1565,8 @@ dbuf_prefetch(dnode_t *dn, uint64_t blkid)
 	blkptr_t *bp = NULL;
 
 	ASSERT(blkid != DB_BONUS_BLKID);
-#ifndef __native_client__
 	ASSERT(RW_LOCK_HELD(&dn->dn_struct_rwlock));
-#endif
+
 	if (dnode_block_freed(dn, blkid))
 		return;
 
@@ -1624,9 +1622,7 @@ dbuf_hold_impl(dnode_t *dn, uint8_t level, uint64_t blkid, int fail_sparse,
 	dmu_buf_impl_t *db, *parent = NULL;
 
 	ASSERT(blkid != DB_BONUS_BLKID);
-#ifndef __native_client__
 	ASSERT(RW_LOCK_HELD(&dn->dn_struct_rwlock));
-#endif
 	ASSERT3U(dn->dn_nlevels, >, level);
 
 	*dbp = NULL;
@@ -1726,9 +1722,9 @@ dbuf_hold_level(dnode_t *dn, int level, uint64_t blkid, void *tag)
 void
 dbuf_create_bonus(dnode_t *dn)
 {
-#ifndef __native_client__
+    //#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&dn->dn_struct_rwlock));
-#endif
+	//#endif
 	ASSERT(dn->dn_bonus == NULL);
 	dn->dn_bonus = dbuf_create(dn, 0, DB_BONUS_BLKID, dn->dn_dbuf, NULL);
 }

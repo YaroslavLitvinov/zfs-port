@@ -412,9 +412,7 @@ dsl_dataset_get_ref(dsl_pool_t *dp, uint64_t dsobj, void *tag,
 			 * we're always called with the read lock held.
 			 */
 			boolean_t need_lock =
-#ifndef __native_client__
 			    !RW_WRITE_HELD(&dp->dp_config_rwlock) &&
-#endif
 			    dsl_pool_sync_context(dp);
 
 			if (need_lock)
@@ -505,9 +503,7 @@ dsl_dataset_hold_ref(dsl_dataset_t *ds, void *tag)
 	 * may block here temporarily, until the "destructability" of
 	 * the dataset is determined.
 	 */
-#ifndef __native_client__
 	ASSERT(!RW_WRITE_HELD(&dp->dp_config_rwlock));
-#endif
 	mutex_enter(&ds->ds_lock);
 	while (!rw_tryenter(&ds->ds_rwlock, RW_READER)) {
 		rw_exit(&dp->dp_config_rwlock);
@@ -643,7 +639,6 @@ dsl_dataset_name(dsl_dataset_t *ds, char *name)
 			 * We use a "recursive" mutex so that we
 			 * can call dprintf_ds() with ds_lock held.
 			 */
-#ifndef __native_client__
 			if (!MUTEX_HELD(&ds->ds_lock)) {
 				mutex_enter(&ds->ds_lock);
 				(void) strcat(name, ds->ds_snapname);
@@ -651,7 +646,6 @@ dsl_dataset_name(dsl_dataset_t *ds, char *name)
 			} else {
 				(void) strcat(name, ds->ds_snapname);
 			}
-#endif
 		}
 	}
 }
@@ -668,7 +662,6 @@ dsl_dataset_namelen(dsl_dataset_t *ds)
 		VERIFY(0 == dsl_dataset_get_snapname(ds));
 		if (ds->ds_snapname[0]) {
 			++result;	/* adding one for the @-sign */
-#ifndef __native_client__
 			if (!MUTEX_HELD(&ds->ds_lock)) {
 				mutex_enter(&ds->ds_lock);
 				result += strlen(ds->ds_snapname);
@@ -676,7 +669,6 @@ dsl_dataset_namelen(dsl_dataset_t *ds)
 			} else {
 				result += strlen(ds->ds_snapname);
 			}
-#endif
 		}
 	}
 
@@ -706,12 +698,10 @@ dsl_dataset_disown(dsl_dataset_t *ds, void *owner)
 
 	mutex_enter(&ds->ds_lock);
 	ds->ds_owner = NULL;
-#ifndef __native_client__
 	if (RW_WRITE_HELD(&ds->ds_rwlock)) {
 		rw_exit(&ds->ds_rwlock);
 		cv_broadcast(&ds->ds_exclusive_cv);
 	}
-#endif
 	mutex_exit(&ds->ds_lock);
 	if (ds->ds_dbuf)
 		dsl_dataset_drop_ref(ds, owner);
@@ -740,10 +730,8 @@ void
 dsl_dataset_make_exclusive(dsl_dataset_t *ds, void *owner)
 {
 	ASSERT3P(owner, ==, ds->ds_owner);
-#ifndef __native_client__
 	if (!RW_WRITE_HELD(&ds->ds_rwlock))
 		rw_enter(&ds->ds_rwlock, RW_WRITER);
-#endif
 }
 
 uint64_t
@@ -1467,9 +1455,7 @@ dsl_dataset_destroy_sync(void *arg1, void *tag, cred_t *cr, dmu_tx_t *tx)
 		dsl_dataset_set_reservation_sync(ds, &val, cr, tx);
 		ASSERT3U(ds->ds_reserved, ==, 0);
 	}
-#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&dp->dp_config_rwlock));
-#endif
 	dsl_pool_ds_destroyed(ds, tx);
 
 	obj = ds->ds_object;
@@ -1796,9 +1782,7 @@ dsl_dataset_snapshot_sync(void *arg1, void *arg2, cred_t *cr, dmu_tx_t *tx)
 	uint64_t dsobj, crtxg;
 	objset_t *mos = dp->dp_meta_objset;
 	int err;
-#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&dp->dp_config_rwlock));
-#endif
 	/*
 	 * The origin's ds_creation_txg has to be < TXG_INITIAL
 	 */

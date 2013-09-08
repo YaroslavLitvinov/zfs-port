@@ -123,12 +123,12 @@ dnode_verify(dnode_t *dn)
 
 	if (!(zfs_flags & ZFS_DEBUG_DNODE_VERIFY))
 		return;
-#ifndef __native_client__
+
 	if (!RW_WRITE_HELD(&dn->dn_struct_rwlock)) {
 		rw_enter(&dn->dn_struct_rwlock, RW_READER);
 		drop_struct_lock = TRUE;
 	}
-#endif
+
 	if (dn->dn_phys->dn_type != DMU_OT_NONE || dn->dn_allocated_txg != 0) {
 		int i;
 		ASSERT3U(dn->dn_indblkshift, >=, 0);
@@ -566,12 +566,11 @@ dnode_hold_impl(objset_impl_t *os, uint64_t object, int flag,
 	mdn = os->os_meta_dnode;
 
 	DNODE_VERIFY(mdn);
-#ifndef __native_client__
+
 	if (!RW_WRITE_HELD(&mdn->dn_struct_rwlock)) {
 		rw_enter(&mdn->dn_struct_rwlock, RW_READER);
 		drop_struct_lock = TRUE;
 	}
-#endif
 
 	blk = dbuf_whichblock(mdn, object * sizeof (dnode_phys_t));
 
@@ -853,12 +852,12 @@ dnode_new_blkid(dnode_t *dn, uint64_t blkid, dmu_tx_t *tx, boolean_t have_read)
 	uint64_t sz;
 
 	ASSERT(blkid != DB_BONUS_BLKID);
-#ifndef __native_client__
+	//#ifndef __native_client__
 	ASSERT(have_read ?
 	    (RW_LOCK_HELD(&dn->dn_struct_rwlock) &&
 	    !RW_WRITE_HELD(&dn->dn_struct_rwlock)) :
 	    RW_WRITE_HELD(&dn->dn_struct_rwlock));
-#endif
+	//#endif
 	/*
 	 * if we have a read-lock, check to see if we need to do any work
 	 * before upgrading to a write-lock.
@@ -934,9 +933,9 @@ dnode_clear_range(dnode_t *dn, uint64_t blkid, uint64_t nblks, dmu_tx_t *tx)
 	free_range_t *rp;
 	free_range_t rp_tofind;
 	uint64_t endblk = blkid + nblks;
-#ifndef __native_client__
+	//#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&dn->dn_mtx));
-#endif
+	//#endif
 	ASSERT(nblks <= UINT64_MAX - blkid); /* no overflow */
 
 	dprintf_dnode(dn, "blkid=%llu nblks=%llu txg=%llu\n",

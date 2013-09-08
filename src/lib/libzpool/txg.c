@@ -200,7 +200,9 @@ txg_sync_stop(dsl_pool_t *dp)
 #endif //__native_client__
     tx->tx_exiting = 0;
 
+#ifndef __native_client__
     mutex_exit(&tx->tx_sync_lock);
+#endif //__native_client__
 }
 
 uint64_t
@@ -439,13 +441,12 @@ txg_delay(dsl_pool_t *dp, uint64_t txg, int ticks)
 void
 txg_wait_synced(dsl_pool_t *dp, uint64_t txg)
 {
-#ifdef __native_client__
-    spa_sync(dp->dp_spa, txg);
-#else
     tx_state_t *tx = &dp->dp_tx;
 
     mutex_enter(&tx->tx_sync_lock);
+#ifndef __native_client__
     ASSERT(tx->tx_threads == 2);
+#endif
 
     if (txg == 0)
 	txg = tx->tx_open_txg;
@@ -454,6 +455,7 @@ txg_wait_synced(dsl_pool_t *dp, uint64_t txg)
     dprintf("txg=%llu quiesce_txg=%llu sync_txg=%llu\n",
 	    txg, tx->tx_quiesce_txg_waiting, tx->tx_sync_txg_waiting);
 
+#ifndef __native_client__
     while (tx->tx_synced_txg < txg) {
 	dprintf("broadcasting sync more "
 		"tx_synced=%llu waiting=%llu dp=%p\n",
@@ -461,8 +463,18 @@ txg_wait_synced(dsl_pool_t *dp, uint64_t txg)
 	cv_broadcast(&tx->tx_sync_more_cv);
 	cv_wait(&tx->tx_sync_done_cv, &tx->tx_sync_lock);
     }
-    mutex_exit(&tx->tx_sync_lock);
+#else
+    tx->tx_quiesced_txg = 0;
+    tx->tx_syncing_txg = txg;
+
+    spa_sync(dp->dp_spa, txg);
+
+    tx->tx_synced_txg = txg;
+    tx->tx_syncing_txg = 0;
+
+    ASSERT(dp->dp_tx.tx_synced_txg==txg);
 #endif
+    mutex_exit(&tx->tx_sync_lock);
 }
 
 void

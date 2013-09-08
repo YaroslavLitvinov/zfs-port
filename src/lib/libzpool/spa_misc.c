@@ -226,12 +226,16 @@ spa_config_enter(spa_t *spa, krw_t rw, void *tag)
 
 	mutex_enter(&scl->scl_lock);
 	if (rw == RW_READER) {
+#ifndef __native_client__
 		while (scl->scl_writer != NULL && scl->scl_writer != curthread)
 			cv_wait(&scl->scl_cv, &scl->scl_lock);
+#endif
 	} else {
+#ifndef __native_client__
 		while (!refcount_is_zero(&scl->scl_count) &&
 		    scl->scl_writer != curthread)
 			cv_wait(&scl->scl_cv, &scl->scl_lock);
+#endif
 		scl->scl_writer = curthread;
 	}
 	(void) refcount_add(&scl->scl_count, tag);
@@ -242,6 +246,7 @@ spa_config_enter(spa_t *spa, krw_t rw, void *tag)
 void
 spa_config_exit(spa_t *spa, void *tag)
 {
+    //#ifndef __native_client__
 	spa_config_lock_t *scl = &spa->spa_config_lock;
 
 	mutex_enter(&scl->scl_lock);
@@ -257,16 +262,17 @@ spa_config_exit(spa_t *spa, void *tag)
 	}
 
 	mutex_exit(&scl->scl_lock);
+	//#endif
 }
 
 boolean_t
 spa_config_held(spa_t *spa, krw_t rw)
 {
-	spa_config_lock_t *scl = &spa->spa_config_lock;
-	if (rw == RW_READER)
-		return (!refcount_is_zero(&scl->scl_count));
-	else
-		return (scl->scl_writer == curthread);
+    spa_config_lock_t *scl = &spa->spa_config_lock;
+    if (rw == RW_READER)
+	return (!refcount_is_zero(&scl->scl_count));
+    else
+	return (scl->scl_writer == curthread);
 }
 
 /*
@@ -286,9 +292,9 @@ spa_lookup(const char *name)
 	avl_index_t where;
 	char c;
 	char *cp;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&spa_namespace_lock));
-#endif
+
 	/*
 	 * If it's a full dataset name, figure out the pool name and
 	 * just use that.
@@ -318,9 +324,9 @@ spa_add(const char *name, const char *altroot)
 {
 	spa_t *spa;
 	spa_config_dirent_t *dp;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&spa_namespace_lock));
-#endif
+
 	spa = kmem_zalloc(sizeof (spa_t), KM_SLEEP);
 
 	rw_init(&spa->spa_traverse_lock, NULL, RW_DEFAULT, NULL);
@@ -380,9 +386,9 @@ void
 spa_remove(spa_t *spa)
 {
 	spa_config_dirent_t *dp;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&spa_namespace_lock));
-#endif
+
 	ASSERT(spa->spa_state == POOL_STATE_UNINITIALIZED);
 
 	avl_remove(&spa_namespace_avl, spa);
@@ -437,9 +443,9 @@ spa_remove(spa_t *spa)
 spa_t *
 spa_next(spa_t *prev)
 {
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&spa_namespace_lock));
-#endif
+
 	if (prev)
 		return (AVL_NEXT(&spa_namespace_avl, prev));
 	else
@@ -459,10 +465,10 @@ spa_next(spa_t *prev)
 void
 spa_open_ref(spa_t *spa, void *tag)
 {
-#ifndef __native_client__
+
 	ASSERT(refcount_count(&spa->spa_refcount) >= spa->spa_minref ||
 	    MUTEX_HELD(&spa_namespace_lock));
-#endif
+
 	(void) refcount_add(&spa->spa_refcount, tag);
 }
 
@@ -473,10 +479,10 @@ spa_open_ref(spa_t *spa, void *tag)
 void
 spa_close(spa_t *spa, void *tag)
 {
-#ifndef __native_client__
+
 	ASSERT(refcount_count(&spa->spa_refcount) > spa->spa_minref ||
 	    MUTEX_HELD(&spa_namespace_lock));
-#endif
+
 	(void) refcount_remove(&spa->spa_refcount, tag);
 }
 
@@ -488,9 +494,9 @@ spa_close(spa_t *spa, void *tag)
 boolean_t
 spa_refcount_zero(spa_t *spa)
 {
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&spa_namespace_lock));
-#endif
+
 	return (refcount_count(&spa->spa_refcount) == spa->spa_minref);
 }
 
@@ -872,9 +878,9 @@ spa_guid_exists(uint64_t pool_guid, uint64_t device_guid)
 {
 	spa_t *spa;
 	avl_tree_t *t = &spa_namespace_avl;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&spa_namespace_lock));
-#endif
+
 	for (spa = avl_first(t); spa != NULL; spa = AVL_NEXT(t, spa)) {
 		if (spa->spa_state == POOL_STATE_UNINITIALIZED)
 			continue;
@@ -1061,10 +1067,9 @@ spa_name(spa_t *spa)
 	 * Accessing the name requires holding either the namespace lock or the
 	 * config lock, both of which are required to do a rename.
 	 */
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&spa_namespace_lock) ||
 	    spa_config_held(spa, RW_READER));
-#endif
+
 	return (spa->spa_name);
 }
 
@@ -1256,7 +1261,9 @@ spa_init(int mode)
 	unique_init();
 	zio_init();
 	dmu_init();
+#ifndef DISABLE_ZIL
 	zil_init();
+#endif //DISABLE_ZIL
 	vdev_cache_stat_init();
 	zfs_prop_init();
 	zpool_prop_init();
@@ -1269,7 +1276,9 @@ spa_fini(void)
 	spa_evict_all();
 
 	vdev_cache_stat_fini();
+#ifndef DISABLE_ZIL
 	zil_fini();
+#endif
 	dmu_fini();
 	zio_fini();
 	unique_fini();
