@@ -324,4 +324,3 @@ vmem_sbrk_arena(vmem_alloc_t **a_out, vmem_free_t **f_out)
 
 	return (sbrk_heap);
 }
-

@@ -23,8 +23,6 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
-
 #include <zone.h>
 #include <string.h>
 #include <errno.h>
@@ -60,5 +58,3 @@ ssize_t getzonenamebyid(zoneid_t id, char *buf, size_t buflen)
 
 	return ret;
 }
-
-#endif //ZVM_COW

@@ -25,16 +25,13 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
-
 #include <sys/systm.h>
 #include <sys/poll.h>
 
 void delay(clock_t ticks)
 {
-#ifdef ZVM_ENABLE
-	poll(0, 0, ticks * (1000 / hz));
-#endif //ZVM_ENABLE
+#ifdef __native_client__
+	abort();
+#endif 
+//	poll(0, 0, ticks * (1000 / hz));
 }
-
-#endif //ZVM_COW

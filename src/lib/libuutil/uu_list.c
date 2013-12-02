@@ -91,21 +91,18 @@ uu_list_pool_create(const char *name, size_t objsize,
 		pp->ulp_debug = 1;
 	pp->ulp_last_index = 0;
 
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_init(&pp->ulp_lock, NULL);
-#endif
+
 	pp->ulp_null_list.ul_next_enc = UU_PTR_ENCODE(&pp->ulp_null_list);
 	pp->ulp_null_list.ul_prev_enc = UU_PTR_ENCODE(&pp->ulp_null_list);
-#ifdef ZVM_ENABLE
+
 	(void) pthread_mutex_lock(&uu_lpool_list_lock);
-#endif
 	pp->ulp_next = next = &uu_null_lpool;
 	pp->ulp_prev = prev = next->ulp_prev;
 	next->ulp_prev = pp;
 	prev->ulp_next = pp;
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_unlock(&uu_lpool_list_lock);
-#endif
+
 	return (pp);
 }
 
@@ -123,14 +120,10 @@ uu_list_pool_destroy(uu_list_pool_t *pp)
 			    (void *)pp);
 		}
 	}
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_lock(&uu_lpool_list_lock);
-#endif
 	pp->ulp_next->ulp_prev = pp->ulp_prev;
 	pp->ulp_prev->ulp_next = pp->ulp_next;
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_unlock(&uu_lpool_list_lock);
-#endif
 	pp->ulp_prev = NULL;
 	pp->ulp_next = NULL;
 	uu_free(pp);
@@ -221,18 +214,16 @@ uu_list_create(uu_list_pool_t *pp, void *parent, uint32_t flags)
 
 	lp->ul_null_walk.ulw_next = &lp->ul_null_walk;
 	lp->ul_null_walk.ulw_prev = &lp->ul_null_walk;
-#ifdef ZVM_ENABLE
+
 	(void) pthread_mutex_lock(&pp->ulp_lock);
-#endif
 	next = &pp->ulp_null_list;
 	prev = UU_PTR_DECODE(next->ul_prev_enc);
 	lp->ul_next_enc = UU_PTR_ENCODE(next);
 	lp->ul_prev_enc = UU_PTR_ENCODE(prev);
 	next->ul_prev_enc = UU_PTR_ENCODE(lp);
 	prev->ul_next_enc = UU_PTR_ENCODE(lp);
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_unlock(&pp->ulp_lock);
-#endif
+
 	return (lp);
 }
 
@@ -257,14 +248,11 @@ uu_list_destroy(uu_list_t *lp)
 			    (void *)lp);
 		}
 	}
-#ifdef ZVM_ENABLE
+
 	(void) pthread_mutex_lock(&pp->ulp_lock);
-#endif
 	UU_LIST_PTR(lp->ul_next_enc)->ul_prev_enc = lp->ul_prev_enc;
 	UU_LIST_PTR(lp->ul_prev_enc)->ul_next_enc = lp->ul_next_enc;
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_unlock(&pp->ulp_lock);
-#endif
 	lp->ul_prev_enc = UU_PTR_ENCODE(NULL);
 	lp->ul_next_enc = UU_PTR_ENCODE(NULL);
 	lp->ul_pool = NULL;
@@ -710,25 +698,21 @@ uu_list_prev(uu_list_t *lp, void *elem)
 void
 uu_list_lockup(void)
 {
-#ifdef ZVM_ENABLE
 	uu_list_pool_t *pp;
 
 	(void) pthread_mutex_lock(&uu_lpool_list_lock);
 	for (pp = uu_null_lpool.ulp_next; pp != &uu_null_lpool;
 	    pp = pp->ulp_next)
 		(void) pthread_mutex_lock(&pp->ulp_lock);
-#endif
 }
 
 void
 uu_list_release(void)
 {
-#ifdef ZVM_ENABLE
 	uu_list_pool_t *pp;
 
 	for (pp = uu_null_lpool.ulp_next; pp != &uu_null_lpool;
 	    pp = pp->ulp_next)
 		(void) pthread_mutex_unlock(&pp->ulp_lock);
 	(void) pthread_mutex_unlock(&uu_lpool_list_lock);
-#endif
 }

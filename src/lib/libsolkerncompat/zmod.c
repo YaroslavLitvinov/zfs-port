@@ -23,8 +23,6 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
-
 #include <zlib.h>
 #include <sys/types.h>
 
@@ -52,6 +50,3 @@ z_compress_level(void *dst, size_t *dstlen, const void *src, size_t srclen,
 
 	return (ret);
 }
-
-
-#endif //ZVM_COW

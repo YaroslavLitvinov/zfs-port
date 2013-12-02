@@ -528,7 +528,7 @@ extern thread_t _thr_self(void);
 
 #define	CPUHINT_MAX()		INT_MAX
 
-#define	CPU(mask)		(umem_cpus + (CPUHINT() & (mask)))
+#define	CPU(mask)		(umem_cpus + ((uint32_t)CPUHINT() & (mask)))
 static umem_cpu_t umem_startup_cpu = {	/* initial, single, cpu */
 	UMEM_CACHE_SIZE(0),
 	0
@@ -591,11 +591,15 @@ umem_cache_t		umem_null_cache = {
 		NULL, 0, 0, 0, 0
 	}, {
 		NULL, 0, 0, 0, 0
-	}, {
-		{
-			DEFAULTMUTEX,		/* start of CPU cache */
-			0, 0, NULL, NULL, -1, -1, 0
-		}
+	}, 
+#ifdef DEBUG
+	{ "" }, /*padding*/
+#endif
+	{
+	    {
+		DEFAULTMUTEX,		/* start of CPU cache */
+		0, 0, NULL, NULL, -1, -1, 0
+	    }
 	}
 };
 
@@ -620,11 +624,11 @@ static umem_cache_t *umem_alloc_table[UMEM_MAXBUF >> UMEM_ALIGN_SHIFT] = {
 };
 
 
-#ifndef ZVM_COW
+#ifndef __native_client
 /* Used to constrain audit-log stack traces */
 caddr_t			umem_min_stack;
 caddr_t			umem_max_stack;
-#endif //ZVM_COW
+#endif //__native_client
 
 /*
  * we use the _ versions, since we don't want to be cancelled.
@@ -2466,6 +2470,7 @@ umem_cache_create(
 			return (NULL);
 		}
 	}
+
 	csize = UMEM_CACHE_SIZE(umem_max_ncpus);
 	phase = P2NPHASE(csize, UMEM_CPU_CACHE_SIZE);
 
@@ -2855,24 +2860,17 @@ umem_cache_init(void)
 	if (umem_bufctl_audit_cache == NULL)
 		return (0);
 
-	if (vmem_backend & VMEM_BACKEND_MMAP){
-/* #ifdef __native_client__ */
-/* 	    magic1(); */
-/* #endif */
+	if (vmem_backend & VMEM_BACKEND_MMAP)
 		umem_va_arena = vmem_create("umem_va",
 		    NULL, 0, pagesize,
 		    vmem_alloc, vmem_free, heap_arena,
 		    8 * pagesize, VM_NOSLEEP);
-	}
 	else
 		umem_va_arena = heap_arena;
 
 	if (umem_va_arena == NULL)
 		return (0);
 
-/* #ifdef __native_client__ */
-/* 	    magic1(); */
-/* #endif */
 	umem_default_arena = vmem_create("umem_default",
 	    NULL, 0, pagesize,
 	    heap_alloc, heap_free, umem_va_arena,
@@ -2961,14 +2959,11 @@ umem_startup()
 #ifdef UMEM_STANDALONE
 	umem_ready = UMEM_READY_STARTUP;
 	umem_init_env_ready = 0;
-#ifdef __native_client__
-	umem_init_thr = !thr_self();
-#endif
 
-#ifndef ZVM_COW
+#ifndef __native_client__
 	umem_min_stack = minstack;
 	umem_max_stack = maxstack;
-#endif //ZVM_COW
+#endif //__native_client__
 	nofail_callback = NULL;
 	umem_slab_cache = NULL;
 	umem_bufctl_cache = NULL;
@@ -3021,7 +3016,7 @@ umem_init(void)
 	umem_cpu_t *new_cpus;
 
 	vmem_t *memalign_arena, *oversize_arena;
-	
+
 	if (thr_self() != umem_init_thr) {
 		/*
 		 * The usual case -- non-recursive invocation of umem_init().
@@ -3055,11 +3050,7 @@ umem_init(void)
 			 */
 			ASSERT(umem_ready == UMEM_READY ||
 			    umem_ready == UMEM_READY_INIT_FAILED);
-#ifdef __native_client__
-	ASSERT(umem_init_thr == !thr_self());
-#else
-	ASSERT(umem_init_thr == 0);
-#endif
+			ASSERT(umem_init_thr == 0);
 			return (umem_ready == UMEM_READY);
 		}
 	} else if (!umem_init_env_ready) {
@@ -3225,11 +3216,7 @@ umem_init(void)
 	 */
 	(void) mutex_lock(&umem_init_lock);
 	umem_ready = UMEM_READY;
-#ifdef __native_client__
-	umem_init_thr = !thr_self();
-#else
 	umem_init_thr = 0;
-#endif
 	(void) cond_broadcast(&umem_init_cv);
 	(void) mutex_unlock(&umem_init_lock);
 	return (1);
@@ -3239,11 +3226,7 @@ fail:
 
 	(void) mutex_lock(&umem_init_lock);
 	umem_ready = UMEM_READY_INIT_FAILED;
-#ifdef __native_client__
-	umem_init_thr = !thr_self();
-#else
 	umem_init_thr = 0;
-#endif
 	(void) cond_broadcast(&umem_init_cv);
 	(void) mutex_unlock(&umem_init_lock);
 	return (0);

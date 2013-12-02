@@ -416,11 +416,11 @@ typedef struct umem_cpu {
 
 #ifdef UMEM_STANDALONE
 
-#ifdef ZVM_COW
+#ifdef __native_client__
 extern void umem_startup();
 #else
 extern void umem_startup(caddr_t, size_t, size_t, caddr_t, caddr_t);
-#endif
+#endif //__native_client__
 
 extern int umem_add(caddr_t, size_t);
 #endif

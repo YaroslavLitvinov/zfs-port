@@ -193,19 +193,14 @@ metaslab_group_sort(metaslab_group_t *mg, metaslab_t *msp, uint64_t weight)
 	 * practice we do not use values in the range [1, 510].
 	 */
 	ASSERT(weight >= SPA_MINBLOCKSIZE-1 || weight == 0);
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&msp->ms_lock));
-#endif
-#ifdef ZVM_ENABLE
+
 	mutex_enter(&mg->mg_lock);
-#endif //ZVM_ENABLE
 	ASSERT(msp->ms_group == mg);
 	avl_remove(&mg->mg_metaslab_tree, msp);
 	msp->ms_weight = weight;
 	avl_add(&mg->mg_metaslab_tree, msp);
-#ifdef ZVM_ENABLE
 	mutex_exit(&mg->mg_lock);
-#endif //ZVM_ENABLE
 }
 
 /*
@@ -381,9 +376,9 @@ metaslab_weight(metaslab_t *msp)
 	space_map_obj_t *smo = &msp->ms_smo;
 	vdev_t *vd = mg->mg_vd;
 	uint64_t weight, space;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&msp->ms_lock));
-#endif
+
 	/*
 	 * The baseline weight is the metaslab's free space.
 	 */
@@ -424,9 +419,9 @@ static int
 metaslab_activate(metaslab_t *msp, uint64_t activation_weight)
 {
 	space_map_t *sm = &msp->ms_map;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&msp->ms_lock));
-#endif
+
 	if ((msp->ms_weight & METASLAB_ACTIVE_MASK) == 0) {
 		int error = space_map_load(sm, &metaslab_ff_ops,
 		    SM_FREE, &msp->ms_smo,

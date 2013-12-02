@@ -51,8 +51,6 @@ int cur_fd = -1;
 avl_tree_t fd_avl;
 pthread_mutex_t fd_avl_mtx = PTHREAD_MUTEX_INITIALIZER;
 
-//#ifndef __native_client__
-
 static int zfsfuse_do_locking()
 {
 	/* Ignores errors since the directory might already exist */
@@ -354,13 +352,13 @@ retry: ;
 	ret->f_client = cur_fd;
 	ret->f_oldfd = fd;
 	ret->f_offset = 0;
-#ifndef __native_client__
+
 	VERIFY(pthread_mutex_lock(&fd_avl_mtx) == 0);
-#endif //__native_client__
+
 	avl_add(&fd_avl, ret);
-#ifndef __native_client__
+
 	VERIFY(pthread_mutex_unlock(&fd_avl_mtx) == 0);
-#endif //__native_client__
+
 	return ret;
 }
 
@@ -374,9 +372,9 @@ void releasef(int fd)
 	file_t f;
 	f.f_client = cur_fd;
 	f.f_oldfd = fd;
-#ifndef __native_client__
+
 	VERIFY(pthread_mutex_lock(&fd_avl_mtx) == 0);
-#endif //__native_client__
+
 	file_t *node = avl_find(&fd_avl, &f, NULL);
 	VERIFY(node != NULL);
 
@@ -384,11 +382,8 @@ void releasef(int fd)
 	VN_RELE(node->f_vnode);
 
 	avl_remove(&fd_avl, node);
-#ifndef __native_client__
+
 	VERIFY(pthread_mutex_unlock(&fd_avl_mtx) == 0);
-#endif //__native_client__
+
 	kmem_free(node, sizeof(file_t));
 }
-
-
-//#endif //__native_client__

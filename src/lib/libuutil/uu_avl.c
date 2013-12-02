@@ -23,7 +23,6 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
 
 
 #include "libuutil_common.h"
@@ -95,21 +94,19 @@ uu_avl_pool_create(const char *name, size_t objsize, size_t nodeoffset,
 	if (flags & UU_AVL_POOL_DEBUG)
 		pp->uap_debug = 1;
 	pp->uap_last_index = 0;
-#ifdef ZVM_ENABLE
+
 	(void) pthread_mutex_init(&pp->uap_lock, NULL);
-#endif
+
 	pp->uap_null_avl.ua_next_enc = UU_PTR_ENCODE(&pp->uap_null_avl);
 	pp->uap_null_avl.ua_prev_enc = UU_PTR_ENCODE(&pp->uap_null_avl);
-#ifdef ZVM_ENABLE
+
 	(void) pthread_mutex_lock(&uu_apool_list_lock);
-#endif
 	pp->uap_next = next = &uu_null_apool;
 	pp->uap_prev = prev = next->uap_prev;
 	next->uap_prev = pp;
 	prev->uap_next = pp;
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_unlock(&uu_apool_list_lock);
-#endif
+
 	return (pp);
 }
 
@@ -127,14 +124,10 @@ uu_avl_pool_destroy(uu_avl_pool_t *pp)
 			    (void *)pp);
 		}
 	}
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_lock(&uu_apool_list_lock);
-#endif
 	pp->uap_next->uap_prev = pp->uap_prev;
 	pp->uap_prev->uap_next = pp->uap_next;
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_unlock(&uu_apool_list_lock);
-#endif
 	pp->uap_prev = NULL;
 	pp->uap_next = NULL;
 	uu_free(pp);
@@ -143,7 +136,6 @@ uu_avl_pool_destroy(uu_avl_pool_t *pp)
 void
 uu_avl_node_init(void *base, uu_avl_node_t *np, uu_avl_pool_t *pp)
 {
-#ifdef ZVM_ENABLE
 	uintptr_t *na = (uintptr_t *)np;
 
 	if (pp->uap_debug) {
@@ -164,13 +156,11 @@ uu_avl_node_init(void *base, uu_avl_node_t *np, uu_avl_pool_t *pp)
 
 	na[0] = POOL_TO_MARKER(pp);
 	na[1] = 0;
-#endif //ZVM_ENABLE
 }
 
 void
 uu_avl_node_fini(void *base, uu_avl_node_t *np, uu_avl_pool_t *pp)
 {
-#ifdef ZVM_ENABLE
 	uintptr_t *na = (uintptr_t *)np;
 
 	if (pp->uap_debug) {
@@ -189,7 +179,6 @@ uu_avl_node_fini(void *base, uu_avl_node_t *np, uu_avl_pool_t *pp)
 	na[0] = DEAD_MARKER;
 	na[1] = DEAD_MARKER;
 	na[2] = DEAD_MARKER;
-#endif //ZVM_ENABLE
 }
 
 struct uu_avl_node_compare_info {
@@ -202,7 +191,6 @@ struct uu_avl_node_compare_info {
 static int
 uu_avl_node_compare(const void *l, const void *r)
 {
-#ifdef ZVM_ENABLE
 	struct uu_avl_node_compare_info *info =
 	    (struct uu_avl_node_compare_info *)l;
 
@@ -216,15 +204,12 @@ uu_avl_node_compare(const void *l, const void *r)
 	if (res < 0)
 		return (1);
 	return (-1);
-#else
-	return -1;
-#endif //ZVM_ENABLE
 }
 
 uu_avl_t *
 uu_avl_create(uu_avl_pool_t *pp, void *parent, uint32_t flags)
 {
-        uu_avl_t *ap, *next, *prev;
+	uu_avl_t *ap, *next, *prev;
 
 	if (flags & ~UU_AVL_DEBUG) {
 		uu_set_error(UU_ERROR_UNKNOWN_FLAG);
@@ -247,18 +232,16 @@ uu_avl_create(uu_avl_pool_t *pp, void *parent, uint32_t flags)
 
 	ap->ua_null_walk.uaw_next = &ap->ua_null_walk;
 	ap->ua_null_walk.uaw_prev = &ap->ua_null_walk;
-#ifdef ZVM_ENABLE
+
 	(void) pthread_mutex_lock(&pp->uap_lock);
-#endif
 	next = &pp->uap_null_avl;
 	prev = UU_PTR_DECODE(next->ua_prev_enc);
 	ap->ua_next_enc = UU_PTR_ENCODE(next);
 	ap->ua_prev_enc = UU_PTR_ENCODE(prev);
 	next->ua_prev_enc = UU_PTR_ENCODE(ap);
 	prev->ua_next_enc = UU_PTR_ENCODE(ap);
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_unlock(&pp->uap_lock);
-#endif
+
 	return (ap);
 }
 
@@ -278,14 +261,10 @@ uu_avl_destroy(uu_avl_t *ap)
 			    (void *)ap);
 		}
 	}
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_lock(&pp->uap_lock);
-#endif
 	UU_AVL_PTR(ap->ua_next_enc)->ua_prev_enc = ap->ua_prev_enc;
 	UU_AVL_PTR(ap->ua_prev_enc)->ua_next_enc = ap->ua_next_enc;
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_unlock(&pp->uap_lock);
-#endif
 	ap->ua_prev_enc = UU_PTR_ENCODE(NULL);
 	ap->ua_next_enc = UU_PTR_ENCODE(NULL);
 
@@ -328,7 +307,6 @@ uu_avl_prev(uu_avl_t *ap, void *node)
 static void
 _avl_walk_init(uu_avl_walk_t *wp, uu_avl_t *ap, uint32_t flags)
 {
-#ifdef ZVM_ENABLE
 	uu_avl_walk_t *next, *prev;
 
 	int robust = (flags & UU_WALK_ROBUST);
@@ -350,13 +328,11 @@ _avl_walk_init(uu_avl_walk_t *wp, uu_avl_t *ap, uint32_t flags)
 		next->uaw_prev = wp;
 		prev->uaw_next = wp;
 	}
-#endif //ZVM_ENABLE
 }
 
 static void *
 _avl_walk_advance(uu_avl_walk_t *wp, uu_avl_t *ap)
 {
-#ifdef ZVM_ENABLE
 	void *np = wp->uaw_next_result;
 
 	avl_tree_t *t = &ap->ua_tree;
@@ -368,15 +344,11 @@ _avl_walk_advance(uu_avl_walk_t *wp, uu_avl_t *ap)
 	    AVL_PREV(t, np);
 
 	return (np);
-#else
-	return -1;
-#endif //ZVM_ENABLE
 }
 
 static void
 _avl_walk_fini(uu_avl_walk_t *wp)
 {
-#ifdef ZVM_ENABLE
 	if (wp->uaw_next != NULL) {
 		wp->uaw_next->uaw_prev = wp->uaw_prev;
 		wp->uaw_prev->uaw_next = wp->uaw_next;
@@ -385,13 +357,11 @@ _avl_walk_fini(uu_avl_walk_t *wp)
 	}
 	wp->uaw_avl = NULL;
 	wp->uaw_next_result = NULL;
-#endif //ZVM_ENABLE
 }
 
 uu_avl_walk_t *
 uu_avl_walk_start(uu_avl_t *ap, uint32_t flags)
 {
-#ifdef ZVM_ENABLE
 	uu_avl_walk_t *wp;
 
 	if (flags & ~(UU_WALK_ROBUST | UU_WALK_REVERSE)) {
@@ -407,32 +377,24 @@ uu_avl_walk_start(uu_avl_t *ap, uint32_t flags)
 
 	_avl_walk_init(wp, ap, flags);
 	return (wp);
-#else
-	return NULL;
-#endif //ZVM_ENABLE
 }
 
 void *
 uu_avl_walk_next(uu_avl_walk_t *wp)
 {
-#ifdef ZVM_ENABLE
 	return (_avl_walk_advance(wp, wp->uaw_avl));
-#endif //ZVM_ENABLE
 }
 
 void
 uu_avl_walk_end(uu_avl_walk_t *wp)
 {
-#ifdef ZVM_ENABLE
 	_avl_walk_fini(wp);
 	uu_free(wp);
-#endif //ZVM_ENABLE
 }
 
 int
 uu_avl_walk(uu_avl_t *ap, uu_walk_fn_t *func, void *private, uint32_t flags)
 {
-#ifdef ZVM_ENABLE
 	void *e;
 	uu_avl_walk_t my_walk;
 
@@ -453,15 +415,11 @@ uu_avl_walk(uu_avl_t *ap, uu_walk_fn_t *func, void *private, uint32_t flags)
 		return (0);
 	uu_set_error(UU_ERROR_CALLBACK_FAILED);
 	return (-1);
-#else
-	return -1;
-#endif //ZVM_ENABLE
 }
 
 void
 uu_avl_remove(uu_avl_t *ap, void *elem)
 {
-#ifdef ZVM_ENABLE
 	uu_avl_walk_t *wp;
 	uu_avl_pool_t *pp = ap->ua_pool;
 	uintptr_t *na = NODE_ARRAY(pp, elem);
@@ -493,13 +451,11 @@ uu_avl_remove(uu_avl_t *ap, void *elem)
 
 	na[0] = POOL_TO_MARKER(pp);
 	na[1] = 0;
-#endif //ZVM_ENABLE
 }
 
 void *
 uu_avl_teardown(uu_avl_t *ap, void **cookie)
 {
-#ifdef ZVM_ENABLE
 	void *elem = avl_destroy_nodes(&ap->ua_tree, cookie);
 
 	if (elem != NULL) {
@@ -510,15 +466,11 @@ uu_avl_teardown(uu_avl_t *ap, void **cookie)
 		na[1] = 0;
 	}
 	return (elem);
-#else
-	return NULL;
-#endif //ZVM_ENABLE
 }
 
 void *
 uu_avl_find(uu_avl_t *ap, void *elem, void *private, uu_avl_index_t *out)
 {
-#ifdef ZVM_ENABLE
 	struct uu_avl_node_compare_info info;
 	void *result;
 
@@ -535,15 +487,11 @@ uu_avl_find(uu_avl_t *ap, void *elem, void *private, uu_avl_index_t *out)
 		uu_panic("uu_avl_find: internal error: avl_find succeeded\n");
 
 	return (info.ac_found);
-#else
-	return NULL;
-#endif //ZVM_ENABLE
 }
 
 void
 uu_avl_insert(uu_avl_t *ap, void *elem, uu_avl_index_t idx)
 {
-#ifdef ZVM_ENABLE
 	if (ap->ua_debug) {
 		uu_avl_pool_t *pp = ap->ua_pool;
 		uintptr_t *na = NODE_ARRAY(pp, elem);
@@ -573,36 +521,26 @@ uu_avl_insert(uu_avl_t *ap, void *elem, uu_avl_index_t idx)
 		ap->ua_index = INDEX_NEXT(ap->ua_index);
 	}
 	avl_insert(&ap->ua_tree, elem, INDEX_DECODE(idx));
-#else
-#endif //ZVM_ENABLE
 }
 
 void *
 uu_avl_nearest_next(uu_avl_t *ap, uu_avl_index_t idx)
 {
-#ifdef ZVM_ENABLE
 	if (ap->ua_debug && !INDEX_VALID(ap, idx))
 		uu_panic("uu_avl_nearest_next(%p, %p): %s\n",
 		    (void *)ap, (void *)idx, INDEX_CHECK(idx)?
 		    "outdated index" : "invalid index");
 	return (avl_nearest(&ap->ua_tree, INDEX_DECODE(idx), AVL_AFTER));
-#else
-	return NULL;
-#endif //ZVM_ENABLE
 }
 
 void *
 uu_avl_nearest_prev(uu_avl_t *ap, uu_avl_index_t idx)
 {
-#ifdef ZVM_ENABLE
 	if (ap->ua_debug && !INDEX_VALID(ap, idx))
 		uu_panic("uu_avl_nearest_prev(%p, %p): %s\n",
 		    (void *)ap, (void *)idx, INDEX_CHECK(idx)?
 		    "outdated index" : "invalid index");
 	return (avl_nearest(&ap->ua_tree, INDEX_DECODE(idx), AVL_BEFORE));
-#else
-	return NULL;
-#endif //ZVM_ENABLE
 }
 
 /*
@@ -611,27 +549,21 @@ uu_avl_nearest_prev(uu_avl_t *ap, uu_avl_index_t idx)
 void
 uu_avl_lockup(void)
 {
-#ifdef ZVM_ENABLE
 	uu_avl_pool_t *pp;
 
 	(void) pthread_mutex_lock(&uu_apool_list_lock);
 	for (pp = uu_null_apool.uap_next; pp != &uu_null_apool;
 	    pp = pp->uap_next)
 		(void) pthread_mutex_lock(&pp->uap_lock);
-#endif //ZVM_ENABLE
 }
 
 void
 uu_avl_release(void)
 {
-#ifdef ZVM_ENABLE
 	uu_avl_pool_t *pp;
 
 	for (pp = uu_null_apool.uap_next; pp != &uu_null_apool;
 	    pp = pp->uap_next)
 		(void) pthread_mutex_unlock(&pp->uap_lock);
 	(void) pthread_mutex_unlock(&uu_apool_list_lock);
-#endif //ZVM_ENABLE
 }
-
-#endif //ZVM_COW

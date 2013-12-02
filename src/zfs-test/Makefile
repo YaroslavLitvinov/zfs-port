@@ -12,11 +12,11 @@ CFLAGS += \
 -I$(PROJ_ROOT)/lib/libsolkerncompat/include -I$(PROJ_ROOT)/lib/libsolkerncompat/include/$(ARCH)
 
 
-SOURCES = test2.c ptrace.c
+SOURCES = test1.c #ptrace.c
 #../zfs-fuse/zfs_operations.c
 #../zfs-fuse/util.c
 
-LD_LIBRARIES=-lz -lrt
+LD_LIBRARIES=-lz -lrt -lpthread
 LDLIBZPOOL_FLAGS=-L$(PROJ_ROOT)/lib/libzpool -lzpool-kernel
 LDLIBCOMMON_FLAGS=-L$(PROJ_ROOT)/lib/libzfscommon -lzfscommon-kernel
 LDLIBCOMMAND_FLAGS=-L$(PROJ_ROOT)/lib/libzfscommand -lzfscommand

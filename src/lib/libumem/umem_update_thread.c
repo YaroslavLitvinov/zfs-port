@@ -40,7 +40,6 @@
  */
 extern int _cond_timedwait(cond_t *cv, mutex_t *mutex, const timespec_t *delay);
 
-#ifndef UMEM_STANDALONE
 /*ARGSUSED*/
 static THR_RETURN
 THR_API umem_update_thread(void *arg)
@@ -121,12 +120,10 @@ THR_API umem_update_thread(void *arg)
 	}
 	/* LINTED no return statement */
 }
-#endif //UMEM_STANDALONE
 
 int
 umem_create_update_thread(void)
 {
-#ifndef UMEM_STANDALONE
 #ifndef _WIN32
 	sigset_t sigmask, oldmask;
 #endif
@@ -152,6 +149,5 @@ umem_create_update_thread(void)
 #ifndef _WIN32
 	(void) thr_sigsetmask(SIG_SETMASK, &oldmask, NULL);
 #endif
-#endif //UMEM_STANDALONE
 	return (0);
 }

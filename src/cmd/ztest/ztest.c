@@ -3407,9 +3407,11 @@ main(int argc, char **argv)
 	char timebuf[100];
 	char numbuf[6];
 
+#ifdef PORT_ARTIFACT
 #ifdef __native_client__
 	umem_startup();
 #endif
+#endif //PORT_ARTIFACT
 
 	(void) setvbuf(stdout, NULL, _IOLBF, 0);
 

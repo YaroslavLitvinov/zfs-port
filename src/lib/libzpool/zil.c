@@ -1026,10 +1026,8 @@ zil_clean(zilog_t *zilog)
 	itx = list_head(&zilog->zl_itx_list);
 	if ((itx != NULL) &&
 	    (itx->itx_lr.lrc_txg <= spa_last_synced_txg(zilog->zl_spa))) {
-#ifndef __native_client__
 		(void) taskq_dispatch(zilog->zl_clean_taskq,
 		    (void (*)(void *))zil_itx_clean, zilog, TQ_NOSLEEP);
-#endif
 	}
 	mutex_exit(&zilog->zl_lock);
 }
@@ -1359,10 +1357,9 @@ zil_open(objset_t *os, zil_get_data_t *get_data)
 	zilog_t *zilog = dmu_objset_zil(os);
 
 	zilog->zl_get_data = get_data;
-#ifndef __native_client__
 	zilog->zl_clean_taskq = taskq_create("zil_clean", 1, minclsyspri,
 	    2, 2, TASKQ_PREPOPULATE);
-#endif
+
 	return (zilog);
 }
 
@@ -1385,9 +1382,8 @@ zil_close(zilog_t *zilog)
 		dmu_tx_commit(tx);
 		txg_wait_synced(zilog->zl_dmu_pool, txg);
 	}
-#ifndef __native_client__
+
 	taskq_destroy(zilog->zl_clean_taskq);
-#endif
 	zilog->zl_clean_taskq = NULL;
 	zilog->zl_get_data = NULL;
 

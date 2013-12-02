@@ -399,10 +399,6 @@ dsl_pool_zil_clean(dsl_pool_t *dp)
 int
 dsl_pool_sync_context(dsl_pool_t *dp)
 {
-#ifdef __native_client__
-    if ( dp == NULL ) return 0;
-    else
-#endif //__native_client__
 	return (curthread == dp->dp_tx.tx_sync_thread ||
 	    spa_get_dsl(dp->dp_spa) == NULL);
 }

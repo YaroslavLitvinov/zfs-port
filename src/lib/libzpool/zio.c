@@ -42,7 +42,6 @@
 #define AIO_MAXEVENTS 256
 #endif
 
-
 /*
  * ==========================================================================
  * I/O priority table
@@ -186,10 +185,10 @@ zio_init(void)
 		if (zio_data_buf_cache[c - 1] == NULL)
 			zio_data_buf_cache[c - 1] = zio_data_buf_cache[c];
 	}
-#ifndef __native_client__
+
 	zio_taskq = taskq_create("zio_taskq", zio_resume_threads,
 	    maxclsyspri, 50, INT_MAX, TASKQ_PREPOPULATE);
-#endif
+
 	zio_inject_init();
 }
 
@@ -213,9 +212,9 @@ zio_fini(void)
 		}
 		zio_data_buf_cache[c] = NULL;
 	}
-#ifndef __native_client__
+
 	taskq_destroy(zio_taskq);
-#endif
+
 	kmem_cache_destroy(zio_cache);
 
 	zio_inject_fini();
@@ -846,16 +845,16 @@ zio_wait(zio_t *zio)
 	int error;
 
 	ASSERT(zio->io_stage == ZIO_STAGE_OPEN);
+
 	zio->io_waiter = curthread;
 
 	zio_execute(zio);
 
-#ifndef __native_client__
 	mutex_enter(&zio->io_lock);
 	while (zio->io_stalled != ZIO_STAGE_DONE)
 		cv_wait(&zio->io_cv, &zio->io_lock);
 	mutex_exit(&zio->io_lock);
-#endif //__native_client__
+
 	error = zio->io_error;
 	zio_destroy(zio);
 
@@ -871,8 +870,8 @@ zio_nowait(zio_t *zio)
 void
 zio_interrupt(zio_t *zio)
 {
-    (void) taskq_dispatch(zio->io_spa->spa_zio_intr_taskq[zio->io_type],
-			  (task_func_t *)zio_execute, zio, TQ_SLEEP);
+	(void) taskq_dispatch(zio->io_spa->spa_zio_intr_taskq[zio->io_type],
+	    (task_func_t *)zio_execute, zio, TQ_SLEEP);
 }
 
 static int
@@ -880,6 +879,7 @@ zio_issue_async(zio_t *zio)
 {
 	(void) taskq_dispatch(zio->io_spa->spa_zio_issue_taskq[zio->io_type],
 	    (task_func_t *)zio_execute, zio, TQ_SLEEP);
+
 	return (ZIO_PIPELINE_STOP);
 }
 
@@ -910,9 +910,9 @@ zio_add_failed_vdev(zio_t *pio, zio_t *zio)
 	uint64_t oldcount = pio->io_failed_vds_count;
 	vdev_t **new_vds;
 	int i;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&pio->io_lock));
-#endif
+
 	if (zio->io_vd == NULL)
 		return;
 
@@ -944,10 +944,7 @@ zio_notify_parent(zio_t *zio, uint32_t stage, uint64_t *countp)
 			zio_add_failed_vdev(pio, zio);
 	}
 	ASSERT3U(*countp, >, 0);
-/* #ifdef __native_client__ */
-/* 	pio->io_stalled = stage; */
-/* #endif //__native_client__ */
-	if (--*countp == 0 && pio->io_stalled == stage ) {
+	if (--*countp == 0 && pio->io_stalled == stage) {
 		pio->io_stalled = 0;
 		mutex_exit(&pio->io_lock);
 		zio_execute(pio);
@@ -1113,10 +1110,9 @@ zio_vdev_resume_io(spa_t *spa)
 		} else {
 			zio->io_stage = ZIO_STAGE_READY;
 		}
-#ifndef __native_client__
+
 		(void) taskq_dispatch(zio_taskq, (task_func_t *)zio_execute,
 		    zio, TQ_SLEEP);
-#endif
 	}
 	mutex_exit(&spa->spa_zio_lock);
 
@@ -1124,12 +1120,7 @@ zio_vdev_resume_io(spa_t *spa)
 	 * Wait for the taskqs to finish and recheck the pool state since
 	 * it's possible that a resumed I/O has failed again.
 	 */
-#ifdef __native_client__
-	/*Run task in the same thread*/
-	taskq_thread(zio_taskq);
-#else
 	taskq_wait(zio_taskq);
-#endif
 	if (spa_state(spa) == POOL_STATE_IO_FAILURE)
 		return (EIO);
 
@@ -2082,9 +2073,9 @@ zio_execute(zio_t *zio)
 	while (zio->io_stage < ZIO_STAGE_DONE) {
 		uint32_t pipeline = zio->io_pipeline;
 		int rv;
-#ifndef __native_client__
+
 		ASSERT(!MUTEX_HELD(&zio->io_lock));
-#endif
+
 		/*
 		 * If an error occurred outside the vdev stack,
 		 * just execute the interlock stages to clean up.
@@ -2105,9 +2096,6 @@ zio_execute(zio_t *zio)
 		ASSERT(zio->io_stage <= ZIO_STAGE_DONE);
 		ASSERT(zio->io_stalled == 0);
 
-#ifdef ZVM_IO_DEBUG
-		printf("zio_execute zio_pipeline[zio->io_stage=%d] \n", zio->io_stage);
-#endif
 		rv = zio_pipeline[zio->io_stage](zio);
 
 		if (rv == ZIO_PIPELINE_STOP)
@@ -2259,10 +2247,6 @@ int zio_aio_init(spa_t *spa)
 	zio_aio_ctx_t *ctx;
 	int error;
 
-#ifdef __native_client__
-	ASSERT(0);
-#endif
-
 	spa->spa_aio_ctx = kmem_alloc(sizeof (zio_aio_ctx_t), KM_SLEEP);
 	ctx = spa->spa_aio_ctx;
 
@@ -2272,12 +2256,8 @@ int zio_aio_init(spa_t *spa)
 
 	if (!error) {
 		ctx->zac_enabled = B_TRUE;
-#ifdef __native_client__
-		zio_aio_thread(ctx);
-#else
 		ctx->zac_thread = thread_create(NULL, 0, zio_aio_thread,
 		    ctx, 0, &p0, TS_RUN, maxclsyspri);
-#endif //__native_client__
 	} else {
 		kmem_free(ctx, sizeof (zio_aio_ctx_t));
 		spa->spa_aio_ctx = NULL;

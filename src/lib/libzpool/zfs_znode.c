@@ -25,6 +25,8 @@
 
 /* Portions Copyright 2007 Jeremy Teo */
 
+
+
 #ifdef _KERNEL
 #include <sys/types.h>
 #include <sys/param.h>
@@ -588,9 +590,8 @@ zfs_znode_dmu_init(zfsvfs_t *zfsvfs, znode_t *zp, dmu_buf_t *db)
 
 	/* ZFSFUSE */
 	/* ASSERT(!POINTER_IS_VALID(zp->z_zfsvfs) || (zfsvfs == zp->z_zfsvfs)); */
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(ZFS_OBJ_MUTEX(zfsvfs, zp->z_id)));
-#endif
+
 	mutex_enter(&zp->z_lock);
 
 	ASSERT(zp->z_dbuf == NULL);
@@ -618,11 +619,9 @@ void
 zfs_znode_dmu_fini(znode_t *zp)
 {
 	dmu_buf_t *db = zp->z_dbuf;
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(ZFS_OBJ_MUTEX(zp->z_zfsvfs, zp->z_id)) ||
 	    zp->z_unlinked ||
 	    RW_WRITE_HELD(&zp->z_zfsvfs->z_teardown_inactive_lock));
-#endif
 	ASSERT(zp->z_dbuf != NULL);
 	zp->z_dbuf = NULL;
 	VERIFY(zp == dmu_buf_update_user(db, zp, NULL, NULL, NULL));
@@ -1127,9 +1126,9 @@ void
 zfs_time_stamper_locked(znode_t *zp, uint_t flag, dmu_tx_t *tx)
 {
 	timestruc_t	now;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&zp->z_lock));
-#endif
+
 	gethrestime(&now);
 
 	if (tx) {

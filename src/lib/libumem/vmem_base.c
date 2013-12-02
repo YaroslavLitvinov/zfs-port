@@ -44,18 +44,15 @@ vmem_heap_arena(vmem_alloc_t **allocp, vmem_free_t **freep)
 	if (umem_ready != UMEM_READY && umem_init_thr != thr_self() &&
 	    umem_init() == 0)
 		return (NULL);
-#ifdef ZVM_ENABLE
+
 	(void) mutex_lock(&arena_mutex);
-#endif //ZVM_ENABLE
 	if (vmem_heap == NULL)
 		vmem_heap_init();
-#ifdef ZVM_ENABLE
 	(void) mutex_unlock(&arena_mutex);
-#endif //ZVM_ENABLE
+
 	if (allocp != NULL)
 		*allocp = vmem_heap_alloc;
 	if (freep != NULL)
 		*freep = vmem_heap_free;
 	return (vmem_heap);
 }
-

@@ -31,7 +31,6 @@
 #include <sys/inttypes.h>
 #include "libnvpair.h"
 
-
 /*
  * libnvpair - A tools library for manipulating <name, value> pairs.
  *

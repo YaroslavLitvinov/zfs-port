@@ -78,9 +78,8 @@ fzap_upgrade(zap_t *zap, dmu_tx_t *tx)
 	zap_leaf_t *l;
 	int i;
 	zap_phys_t *zp;
-#ifndef __native_client__
+
 	ASSERT(RW_WRITE_HELD(&zap->zap_rwlock));
-#endif
 	zap->zap_ismicro = FALSE;
 
 	(void) dmu_buf_update_user(zap->zap_dbuf, zap, zap,
@@ -130,10 +129,8 @@ fzap_upgrade(zap_t *zap, dmu_tx_t *tx)
 static int
 zap_tryupgradedir(zap_t *zap, dmu_tx_t *tx)
 {
-#ifndef __native_client__
 	if (RW_WRITE_HELD(&zap->zap_rwlock))
 		return (1);
-#endif
 	if (rw_tryupgrade(&zap->zap_rwlock)) {
 		dmu_buf_will_dirty(zap->zap_dbuf, tx);
 		return (1);
@@ -156,9 +153,8 @@ zap_table_grow(zap_t *zap, zap_table_phys_t *tbl,
 	int bs = FZAP_BLOCK_SHIFT(zap);
 	int hepb = 1<<(bs-4);
 	/* hepb = half the number of entries in a block */
-#ifndef __native_client__
+
 	ASSERT(RW_WRITE_HELD(&zap->zap_rwlock));
-#endif
 	ASSERT(tbl->zt_blk != 0);
 	ASSERT(tbl->zt_numblks > 0);
 
@@ -378,9 +374,7 @@ static uint64_t
 zap_allocate_blocks(zap_t *zap, int nblocks)
 {
 	uint64_t newblk;
-#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&zap->zap_rwlock));
-#endif
 	newblk = zap->zap_f.zap_phys->zap_freeblk;
 	zap->zap_f.zap_phys->zap_freeblk += nblocks;
 	return (newblk);
@@ -391,9 +385,9 @@ zap_create_leaf(zap_t *zap, dmu_tx_t *tx)
 {
 	void *winner;
 	zap_leaf_t *l = kmem_alloc(sizeof (zap_leaf_t), KM_SLEEP);
-#ifndef __native_client__
+
 	ASSERT(RW_WRITE_HELD(&zap->zap_rwlock));
-#endif
+
 	rw_init(&l->l_rwlock, 0, 0, 0);
 	rw_enter(&l->l_rwlock, RW_WRITER);
 	l->l_blkid = zap_allocate_blocks(zap, 1);
@@ -555,9 +549,8 @@ static int
 zap_set_idx_to_blk(zap_t *zap, uint64_t idx, uint64_t blk, dmu_tx_t *tx)
 {
 	ASSERT(tx != NULL);
-#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&zap->zap_rwlock));
-#endif
+
 	if (zap->zap_f.zap_phys->zap_ptrtbl.zt_blk == 0) {
 		ZAP_EMBEDDED_PTRTBL_ENT(zap, idx) = blk;
 		return (0);
@@ -635,9 +628,7 @@ zap_expand_leaf(zap_name_t *zn, zap_leaf_t *l, dmu_tx_t *tx, zap_leaf_t **lp)
 			return (0);
 		}
 	}
-#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&zap->zap_rwlock));
-#endif
 	ASSERT3U(old_prefix_len, <, zap->zap_f.zap_phys->zap_ptrtbl.zt_shift);
 	ASSERT3U(ZAP_HASH_IDX(hash, old_prefix_len), ==,
 	    l->l_phys->l_hdr.lh_prefix);

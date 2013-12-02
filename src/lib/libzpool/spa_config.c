@@ -207,9 +207,9 @@ spa_config_sync(spa_t *target, boolean_t removing, boolean_t postsysevent)
 	spa_t *spa = NULL;
 	spa_config_dirent_t *dp, *tdp;
 	nvlist_t *nvl;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&spa_namespace_lock));
-#endif
+
 	/*
 	 * Iterate over all cachefiles for the pool, past or present.  When the
 	 * cachefile is changed, the new one is pushed onto this list, allowing
@@ -410,9 +410,9 @@ spa_config_update_common(spa_t *spa, int what, boolean_t isroot)
 	vdev_t *rvd = spa->spa_root_vdev;
 	uint64_t txg;
 	int c;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&spa_namespace_lock));
-#endif
+
 	spa_config_enter(spa, RW_WRITER, FTAG);
 	txg = spa_last_synced_txg(spa) + 1;
 	if (what == SPA_CONFIG_UPDATE_POOL) {

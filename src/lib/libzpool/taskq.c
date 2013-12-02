@@ -55,32 +55,6 @@ struct taskq {
 	task_t		tq_task;
 };
 
-#ifdef __native_client__
-#define MAX_TASKS_COUNT 1000
-static struct taskq* zvm_task_list[MAX_TASKS_COUNT];
-static int           zvm_task_count=0;
-
-static void
-zvm_task_add(struct taskq* tq){
-    ASSERT(zvm_task_count < MAX_TASKS_COUNT);
-    zvm_task_list[zvm_task_count++] = tq;
-}
-static void
-zvm_task_remove(){
-    ASSERT(zvm_task_count);
-}
-static struct taskq*
-zvm_task_next(){
-    struct taskq* t = NULL;
-    if ( zvm_task_count > 0 ){
-	t = zvm_task_list[zvm_task_count-1];
-	zvm_task_remove();
-    }
-    return t;
-}
-#endif
-
-
 static task_t *
 task_alloc(taskq_t *tq, int tqflags)
 {
@@ -131,10 +105,7 @@ taskq_dispatch(taskq_t *tq, task_func_t func, void *arg, uint_t tqflags)
 {
 	task_t *t;
 
-#ifndef __native_client__
-	if (taskq_now) 
-#endif
-	{
+	if (taskq_now) {
 		func(arg);
 		return (1);
 	}
@@ -153,9 +124,6 @@ taskq_dispatch(taskq_t *tq, task_func_t func, void *arg, uint_t tqflags)
 	t->task_arg = arg;
 	cv_signal(&tq->tq_dispatch_cv);
 	mutex_exit(&tq->tq_lock);
-/* #ifdef __native_client__ */
-/* 	zvm_task_add(tq); */
-/* #endif */
 	return (1);
 }
 
@@ -231,7 +199,6 @@ taskq_create(const char *name, int nthreads, pri_t pri,
 	tq->tq_task.task_prev = &tq->tq_task;
 	tq->tq_threadlist = kmem_alloc(nthreads * sizeof (pthread_t), KM_SLEEP);
 
-#ifndef __native_client__
 	if (flags & TASKQ_PREPOPULATE) {
 		mutex_enter(&tq->tq_lock);
 		while (minalloc-- > 0)
@@ -241,7 +208,7 @@ taskq_create(const char *name, int nthreads, pri_t pri,
 
 	for (t = 0; t < nthreads; t++)
 		pthread_create(&tq->tq_threadlist[t], NULL, taskq_thread, tq);
-#endif //__native_client__
+
 	return (tq);
 }
 
@@ -267,12 +234,11 @@ taskq_destroy(taskq_t *tq)
 		task_free(tq, task_alloc(tq, KM_SLEEP));
 	}
 
-#ifdef ZVM_ENABLE
 	mutex_exit(&tq->tq_lock);
 
 	for (t = 0; t < nthreads; t++)
 		(void) pthread_join(tq->tq_threadlist[t], NULL);
-#endif //ZVM_ENABLE
+
 	kmem_free(tq->tq_threadlist, nthreads * sizeof (pthread_t));
 
 	rw_destroy(&tq->tq_threadlock);

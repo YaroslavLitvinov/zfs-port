@@ -85,12 +85,11 @@ rrn_find(rrwlock_t *rrl)
 
 	if (refcount_count(&rrl->rr_linked_rcount) == 0)
 		return (NULL);
-#ifndef __native_client__
+
 	for (rn = tsd_get(rrw_tsd_key); rn != NULL; rn = rn->rn_next) {
 		if (rn->rn_rrl == rrl)
 			return (rn);
 	}
-#endif
 	return (NULL);
 }
 
@@ -104,10 +103,8 @@ rrn_add(rrwlock_t *rrl)
 
 	rn = kmem_alloc(sizeof (*rn), KM_SLEEP);
 	rn->rn_rrl = rrl;
-#ifndef __native_client__
 	rn->rn_next = tsd_get(rrw_tsd_key);
 	VERIFY(tsd_set(rrw_tsd_key, rn) == 0);
-#endif
 }
 
 /*
@@ -122,7 +119,7 @@ rrn_find_and_remove(rrwlock_t *rrl)
 
 	if (refcount_count(&rrl->rr_linked_rcount) == 0)
 		return (B_FALSE);
-#ifndef __native_client__
+
 	for (rn = tsd_get(rrw_tsd_key); rn != NULL; rn = rn->rn_next) {
 		if (rn->rn_rrl == rrl) {
 			if (prev)
@@ -134,7 +131,6 @@ rrn_find_and_remove(rrwlock_t *rrl)
 		}
 		prev = rn;
 	}
-#endif //__native_client__
 	return (B_FALSE);
 }
 
@@ -162,11 +158,10 @@ rrw_destroy(rrwlock_t *rrl)
 static void
 rrw_enter_read(rrwlock_t *rrl, void *tag)
 {
-#ifdef ZVM_ENABLE
 	mutex_enter(&rrl->rr_lock);
 	ASSERT(rrl->rr_writer != curthread);
-#endif //ZVM_ENABLE
 	ASSERT(refcount_count(&rrl->rr_anon_rcount) >= 0);
+
 	while (rrl->rr_writer || (rrl->rr_writer_wanted &&
 	    refcount_is_zero(&rrl->rr_anon_rcount) &&
 	    rrn_find(rrl) == NULL))
@@ -187,9 +182,8 @@ static void
 rrw_enter_write(rrwlock_t *rrl)
 {
 	mutex_enter(&rrl->rr_lock);
-#ifndef __native_client__
 	ASSERT(rrl->rr_writer != curthread);
-#endif
+
 	while (refcount_count(&rrl->rr_anon_rcount) > 0 ||
 	    refcount_count(&rrl->rr_linked_rcount) > 0 ||
 	    rrl->rr_writer != NULL) {
@@ -197,9 +191,7 @@ rrw_enter_write(rrwlock_t *rrl)
 		cv_wait(&rrl->rr_cv, &rrl->rr_lock);
 	}
 	rrl->rr_writer_wanted = B_FALSE;
-#ifndef __native_client__
 	rrl->rr_writer = curthread;
-#endif
 	mutex_exit(&rrl->rr_lock);
 }
 
@@ -230,9 +222,7 @@ rrw_exit(rrwlock_t *rrl, void *tag)
 				cv_broadcast(&rrl->rr_cv);
 		}
 	} else {
-#ifndef __native_client__
 		ASSERT(rrl->rr_writer == curthread);
-#endif
 		ASSERT(refcount_is_zero(&rrl->rr_anon_rcount) &&
 		    refcount_is_zero(&rrl->rr_linked_rcount));
 		rrl->rr_writer = NULL;
@@ -248,9 +238,7 @@ rrw_held(rrwlock_t *rrl, krw_t rw)
 
 	mutex_enter(&rrl->rr_lock);
 	if (rw == RW_WRITER) {
-#ifndef __native_client__
 		held = (rrl->rr_writer == curthread);
-#endif
 	} else {
 		held = (!refcount_is_zero(&rrl->rr_anon_rcount) ||
 		    !refcount_is_zero(&rrl->rr_linked_rcount));

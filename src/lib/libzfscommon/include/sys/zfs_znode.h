@@ -236,19 +236,14 @@ typedef struct znode {
  * ZFS_EXIT() must be called before exitting the vop.
  * ZFS_VERIFY_ZP() verifies the znode is valid.
  */
-#ifdef __native_client__
-#define	ZFS_ENTER(zfsvfs)					\
-    rrw_enter(&(zfsvfs)->z_teardown_lock, RW_READER, FTAG)
-#else
-#define	ZFS_ENTER(zfsvfs)					\
-    {								\
-	rrw_enter(&(zfsvfs)->z_teardown_lock, RW_READER, FTAG); \
-	if ((zfsvfs)->z_unmounted) {				\
-	    ZFS_EXIT(zfsvfs);					\
-	    return (EIO);					\
-	}							\
-    }
-#endif //__native_client__
+#define	ZFS_ENTER(zfsvfs) \
+	{ \
+		rrw_enter(&(zfsvfs)->z_teardown_lock, RW_READER, FTAG); \
+		if ((zfsvfs)->z_unmounted) { \
+			ZFS_EXIT(zfsvfs); \
+			return (EIO); \
+		} \
+	}
 
 #define	ZFS_EXIT(zfsvfs) rrw_exit(&(zfsvfs)->z_teardown_lock, FTAG)
 

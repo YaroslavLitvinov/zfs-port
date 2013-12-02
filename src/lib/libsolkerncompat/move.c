@@ -26,8 +26,6 @@
 #include <sys/uio.h>
 #include <string.h>
 
-#ifdef ZVM_COW
-
 /*
  * Move "n" bytes at byte address "p"; "rw" indicates the direction
  * of the move, and the I/O parameters are provided in "uio", which is
@@ -62,5 +60,3 @@ uiomove(void *p, size_t n, enum uio_rw rw, struct uio *uio)
 	}
 	return (0);
 }
-
-#endif //ZVM_COW

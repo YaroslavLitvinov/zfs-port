@@ -299,12 +299,9 @@ static void *zfsfuse_listener_loop(void *arg)
 
 int zfsfuse_listener_start()
 {
-#ifdef __native_client__
 #ifdef DEBUG
-    fprintf(stdout, "zfsfuse_listener_loop...\n");
+    fprintf(stdout, "zfsfuse_listener_start...\n");
 #endif
-    zfsfuse_listener_loop();
-#else
 	for(int i = 0; i < NUM_THREADS; i++)
 		VERIFY(pthread_create(&fuse_threads[i], NULL, zfsfuse_listener_loop, NULL) == 0);
 
@@ -313,7 +310,6 @@ int zfsfuse_listener_start()
 		if(ret != 0)
 			fprintf(stderr, "Warning: pthread_join() on thread %i returned %i\n", i, ret);
 	}
-#endif //__native_client__
 
 #ifdef DEBUG
 	fprintf(stderr, "Exiting...\n");

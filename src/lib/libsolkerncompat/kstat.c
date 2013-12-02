@@ -23,8 +23,6 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
-
 #include <sys/kstat.h>
 
 /*ARGSUSED*/
@@ -43,5 +41,3 @@ kstat_install(kstat_t *ksp)
 void
 kstat_delete(kstat_t *ksp)
 {}
-
-#endif //#ifdef ZVM_COW

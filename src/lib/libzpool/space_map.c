@@ -84,9 +84,8 @@ space_map_add(space_map_t *sm, uint64_t start, uint64_t size)
 	space_seg_t ssearch, *ss_before, *ss_after, *ss;
 	uint64_t end = start + size;
 	int merge_before, merge_after;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(sm->sm_lock));
-#endif
 	VERIFY(size != 0);
 	VERIFY3U(start, >=, sm->sm_start);
 	VERIFY3U(end, <=, sm->sm_start + sm->sm_size);
@@ -139,9 +138,8 @@ space_map_remove(space_map_t *sm, uint64_t start, uint64_t size)
 	space_seg_t ssearch, *ss, *newseg;
 	uint64_t end = start + size;
 	int left_over, right_over;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(sm->sm_lock));
-#endif
 	VERIFY(size != 0);
 	VERIFY(P2PHASE(start, 1ULL << sm->sm_shift) == 0);
 	VERIFY(P2PHASE(size, 1ULL << sm->sm_shift) == 0);
@@ -188,9 +186,8 @@ space_map_contains(space_map_t *sm, uint64_t start, uint64_t size)
 	avl_index_t where;
 	space_seg_t ssearch, *ss;
 	uint64_t end = start + size;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(sm->sm_lock));
-#endif
 	VERIFY(size != 0);
 	VERIFY(P2PHASE(start, 1ULL << sm->sm_shift) == 0);
 	VERIFY(P2PHASE(size, 1ULL << sm->sm_shift) == 0);
@@ -207,9 +204,9 @@ space_map_vacate(space_map_t *sm, space_map_func_t *func, space_map_t *mdest)
 {
 	space_seg_t *ss;
 	void *cookie = NULL;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(sm->sm_lock));
-#endif
+
 	while ((ss = avl_destroy_nodes(&sm->sm_root, &cookie)) != NULL) {
 		if (func != NULL)
 			func(mdest, ss->ss_start, ss->ss_end - ss->ss_start);
@@ -235,9 +232,9 @@ space_map_excise(space_map_t *sm, uint64_t start, uint64_t size)
 	space_seg_t *ss, search;
 	uint64_t end = start + size;
 	uint64_t rm_start, rm_end;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(sm->sm_lock));
-#endif
+
 	search.ss_start = start;
 	search.ss_end = start;
 
@@ -265,9 +262,9 @@ space_map_union(space_map_t *smd, space_map_t *sms)
 {
 	avl_tree_t *t = &sms->sm_root;
 	space_seg_t *ss;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(smd->sm_lock));
-#endif
+
 	/*
 	 * For each source segment, remove any intersections with the
 	 * destination, then add the source segment to the destination.
@@ -284,9 +281,8 @@ space_map_union(space_map_t *smd, space_map_t *sms)
 void
 space_map_load_wait(space_map_t *sm)
 {
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(sm->sm_lock));
-#endif
+
 	while (sm->sm_loading)
 		cv_wait(&sm->sm_load_cv, sm->sm_lock);
 }
@@ -303,9 +299,9 @@ space_map_load(space_map_t *sm, space_map_ops_t *ops, uint8_t maptype,
 	uint64_t bufsize, size, offset, end, space;
 	uint64_t mapstart = sm->sm_start;
 	int error = 0;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(sm->sm_lock));
-#endif
+
 	space_map_load_wait(sm);
 
 	if (sm->sm_loaded)
@@ -382,9 +378,8 @@ space_map_load(space_map_t *sm, space_map_ops_t *ops, uint8_t maptype,
 void
 space_map_unload(space_map_t *sm)
 {
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(sm->sm_lock));
-#endif
+
 	if (sm->sm_loaded && sm->sm_ops != NULL)
 		sm->sm_ops->smop_unload(sm);
 
@@ -431,9 +426,8 @@ space_map_sync(space_map_t *sm, uint8_t maptype,
 	space_seg_t *ss;
 	uint64_t bufsize, start, size, run_len;
 	uint64_t *entry, *entry_map, *entry_map_end;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(sm->sm_lock));
-#endif
 
 	if (sm->sm_space == 0)
 		return;

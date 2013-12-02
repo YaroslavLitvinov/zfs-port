@@ -191,7 +191,6 @@ dsl_dir_name(dsl_dir_t *dd, char *buf)
 	} else {
 		buf[0] = '\0';
 	}
-#ifndef __native_client__
 	if (!MUTEX_HELD(&dd->dd_lock)) {
 		/*
 		 * recursive mutex so that we can use
@@ -203,7 +202,6 @@ dsl_dir_name(dsl_dir_t *dd, char *buf)
 	} else {
 		(void) strcat(buf, dd->dd_myname);
 	}
-#endif
 }
 
 /* Calculate name legnth, avoiding all the strcat calls of dsl_dir_name */
@@ -216,7 +214,7 @@ dsl_dir_namelen(dsl_dir_t *dd)
 		/* parent's name + 1 for the "/" */
 		result = dsl_dir_namelen(dd->dd_parent) + 1;
 	}
-#ifndef __native_client__
+
 	if (!MUTEX_HELD(&dd->dd_lock)) {
 		/* see dsl_dir_name */
 		mutex_enter(&dd->dd_lock);
@@ -225,7 +223,6 @@ dsl_dir_namelen(dsl_dir_t *dd)
 	} else {
 		result += strlen(dd->dd_myname);
 	}
-#endif
 
 	return (result);
 }
@@ -310,14 +307,9 @@ dsl_dir_open_spa(spa_t *spa, const char *name, void *tag,
 
 	dprintf("%s\n", name);
 
-#ifdef __native_client__
-	strcpy(buf, "ztest");
-	next = NULL;
-#else
 	err = getcomponent(name, buf, &next);
 	if (err)
 		return (err);
-#endif
 	if (spa == NULL) {
 		err = spa_open(buf, &spa, FTAG);
 		if (err) {
@@ -482,9 +474,8 @@ dsl_dir_destroy_sync(void *arg1, void *tag, cred_t *cr, dmu_tx_t *tx)
 	objset_t *mos = dd->dd_pool->dp_meta_objset;
 	uint64_t val, obj;
 	dd_used_t t;
-#ifndef __native_client__
+
 	ASSERT(RW_WRITE_HELD(&dd->dd_pool->dp_config_rwlock));
-#endif
 	ASSERT(dd->dd_phys->dd_head_dataset_obj == 0);
 
 	/* Remove our reservation. */
@@ -599,9 +590,9 @@ dsl_dir_space_towrite(dsl_dir_t *dd)
 {
 	uint64_t space = 0;
 	int i;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&dd->dd_lock));
-#endif
+
 	for (i = 0; i < TXG_SIZE; i++) {
 		space += dd->dd_space_towrite[i&TXG_MASK];
 		ASSERT3U(dd->dd_space_towrite[i&TXG_MASK], >=, 0);

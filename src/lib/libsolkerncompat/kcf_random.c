@@ -34,6 +34,7 @@
 static int
 random_get_bytes_common(uint8_t *ptr, size_t len, char *devname)
 {
+#ifdef ZVM_ENABLE
 	int fd = open(devname, O_RDONLY);
 	size_t resid = len;
 	ssize_t bytes;
@@ -50,6 +51,9 @@ random_get_bytes_common(uint8_t *ptr, size_t len, char *devname)
 	close(fd);
 
 	return (0);
+#else
+	return (0);
+#endif //ZVM_ENABLE
 }
 
 int

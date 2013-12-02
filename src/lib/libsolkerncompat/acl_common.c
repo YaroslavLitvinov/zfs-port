@@ -23,7 +23,7 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
+
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1724,5 +1724,3 @@ out:
 #endif
 }
 #endif
-
-#endif //ZVM_COW

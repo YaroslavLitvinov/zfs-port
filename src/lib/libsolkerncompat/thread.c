@@ -34,12 +34,8 @@
 static kthread_t s_thread;
 
 kthread_t *
-zk_thread_create(void (*func)(void*), void *arg)
+zk_thread_create(void (*func)(), void *arg)
 {
-#ifdef __native_client__
-    func(arg);
-    return &s_thread;
-#else
 	pthread_t tid;
 
 	pthread_attr_t attr;
@@ -52,5 +48,4 @@ zk_thread_create(void (*func)(void*), void *arg)
 	pthread_attr_destroy(&attr);
 
 	return ((void *)(uintptr_t)tid);
-#endif
 }

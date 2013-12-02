@@ -128,7 +128,6 @@ dnode_verify(dnode_t *dn)
 		rw_enter(&dn->dn_struct_rwlock, RW_READER);
 		drop_struct_lock = TRUE;
 	}
-
 	if (dn->dn_phys->dn_type != DMU_OT_NONE || dn->dn_allocated_txg != 0) {
 		int i;
 		ASSERT3U(dn->dn_indblkshift, >=, 0);
@@ -608,11 +607,7 @@ dnode_hold_impl(objset_impl_t *os, uint64_t object, int flag,
 
 		dn = dnode_create(os, dnp, db, object);
 		winner = atomic_cas_ptr(&children_dnodes[idx], NULL, dn);
-		if (winner != NULL
-#ifdef __native_client__
-		    && winner != dn
-#endif
-) {
+		if (winner != NULL) {
 			dnode_destroy(dn);
 			dn = winner;
 		}
@@ -852,12 +847,12 @@ dnode_new_blkid(dnode_t *dn, uint64_t blkid, dmu_tx_t *tx, boolean_t have_read)
 	uint64_t sz;
 
 	ASSERT(blkid != DB_BONUS_BLKID);
-	//#ifndef __native_client__
+
 	ASSERT(have_read ?
 	    (RW_LOCK_HELD(&dn->dn_struct_rwlock) &&
 	    !RW_WRITE_HELD(&dn->dn_struct_rwlock)) :
 	    RW_WRITE_HELD(&dn->dn_struct_rwlock));
-	//#endif
+
 	/*
 	 * if we have a read-lock, check to see if we need to do any work
 	 * before upgrading to a write-lock.
@@ -933,9 +928,8 @@ dnode_clear_range(dnode_t *dn, uint64_t blkid, uint64_t nblks, dmu_tx_t *tx)
 	free_range_t *rp;
 	free_range_t rp_tofind;
 	uint64_t endblk = blkid + nblks;
-	//#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&dn->dn_mtx));
-	//#endif
 	ASSERT(nblks <= UINT64_MAX - blkid); /* no overflow */
 
 	dprintf_dnode(dn, "blkid=%llu nblks=%llu txg=%llu\n",

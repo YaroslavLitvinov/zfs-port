@@ -23,8 +23,6 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
-
 #include <sys/cmn_err.h>
 
 #include <stdio.h>
@@ -95,5 +93,3 @@ cmn_err(int ce, const char *fmt, ...)
 	vcmn_err(ce, fmt, adx);
 	va_end(adx);
 }
-
-#endif //ZVM_COW

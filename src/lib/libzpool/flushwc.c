@@ -9,16 +9,15 @@
  * real SCSI hardware.
  */
 
-
 //It shouldn't be necessary to include stddef.h explicitly, but
 //on my machine scsi/sg.h errors out without it.
 #include <stddef.h>
 #include <scsi/sg.h>
 #include <string.h>
-#ifdef ZVM_ENABLE
+#ifndef __native_client__
 #include <linux/hdreg.h>
 #include <linux/major.h>
-#endif //ZVM_ENABLE
+#endif //__native_client__
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -44,7 +43,7 @@
  * A return value other than 0 indicates failure.
  */
 static int flushSCSIwc(int fd) {
-#ifdef ZVM_ENABLE
+#ifndef __native_client__
   /*
    * Taken together, these three variables make up the data
    * structure used to talk to the SCSI disk driver via the SG_IO ioctl.
@@ -100,7 +99,7 @@ static int flushSCSIwc(int fd) {
      * why the cache flush failed.
      */
     return EIO;
-#endif //ZVM_ENABLE
+#endif //__native_client__
   // Everything went fine.
   return 0;
 }
@@ -117,7 +116,7 @@ static int flushSCSIwc(int fd) {
  * the nature of the failure.
  */
 static int flushATAwc(int fd) {
-#ifdef ZVM_ENABLE
+#ifndef __native_client__
   unsigned char ata_command[4];
 
   ata_command[0] = WIN_FLUSH_CACHE;
@@ -128,7 +127,7 @@ static int flushATAwc(int fd) {
   return ioctl(fd, HDIO_DRIVE_CMD, ata_command) == 0 ? 0 : EIO;
 #else
   return 0;
-#endif //ZVM_ENABLE
+#endif //__native_client__
 }
 
 /*
@@ -144,7 +143,7 @@ static int flushATAwc(int fd) {
  * the nature of the failure.
  */
 int flushwc(vnode_t *vn) {
-#ifdef ZVM_ENABLE
+#ifndef __native_client__
   int major_number;
 
   if(!S_ISBLK(vn->v_stat.st_mode))
@@ -188,6 +187,5 @@ int flushwc(vnode_t *vn) {
   }
 #else
   return 0;
-#endif //ZVM_ENABLE
+#endif //__native_client__
 }
-

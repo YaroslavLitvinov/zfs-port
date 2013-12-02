@@ -132,9 +132,7 @@ vdev_cache_lastused_compare(const void *a1, const void *a2)
 static void
 vdev_cache_evict(vdev_cache_t *vc, vdev_cache_entry_t *ve)
 {
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&vc->vc_lock));
-#endif
 	ASSERT(ve->ve_fill_io == NULL);
 	ASSERT(ve->ve_data != NULL);
 
@@ -159,9 +157,9 @@ vdev_cache_allocate(zio_t *zio)
 	vdev_cache_t *vc = &zio->io_vd->vdev_cache;
 	uint64_t offset = P2ALIGN(zio->io_offset, VCBS);
 	vdev_cache_entry_t *ve;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&vc->vc_lock));
-#endif
+
 	if (zfs_vdev_cache_size == 0)
 		return (NULL);
 
@@ -195,9 +193,8 @@ static void
 vdev_cache_hit(vdev_cache_t *vc, vdev_cache_entry_t *ve, zio_t *zio)
 {
 	uint64_t cache_phase = P2PHASE(zio->io_offset, VCBS);
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&vc->vc_lock));
-#endif
 	ASSERT(ve->ve_fill_io == NULL);
 
 	if (ve->ve_lastused != lbolt) {

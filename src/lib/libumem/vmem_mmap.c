@@ -65,40 +65,6 @@ static size_t CHUNKSIZE;
 #endif
 
 static vmem_t *mmap_heap;
-#ifdef __native_client__
-#define MMAP_PSEUDO_HEAP_INITADDR 0x8000000
-#define MMAP_PSEUDO_HEAP_SIZE     0xE0000000
-static void *s_mmap_heap_addr_pos = NULL;
-static uint  s_mmap_heap_size = 0;
-
-static void get_mmap_heap_stop_on_fail(){
-    /*if no memory allocated*/
-    if ( s_mmap_heap_addr_pos == 0 ){
-	/*debug fail if allocated memory is out*/
-	ASSERT(s_mmap_heap_size == 0);
-	s_mmap_heap_size     = MMAP_PSEUDO_HEAP_SIZE;
-	s_mmap_heap_addr_pos = MMAP_PSEUDO_HEAP_INITADDR;
-	/*No real mmap allocations, just use unallocated memory,
-	 should be resided after sysbrk*/
-    }
-}
-
-static void* mmap_pseudo(uint size){
-    get_mmap_heap_stop_on_fail();
-    if ( size > s_mmap_heap_size ){
-	ASSERT(s_mmap_heap_size>size);
-	return NULL;
-    }
-    else if ( size <= s_mmap_heap_size )
-	s_mmap_heap_size -= size;
-    else
-	s_mmap_heap_size = -1;
-    void *p = s_mmap_heap_addr_pos;
-    s_mmap_heap_addr_pos += size;
-    return p;
-}
-#endif //__native_client__
-
 
 static void *
 vmem_mmap_alloc(vmem_t *src, size_t size, int vmflags)
@@ -110,12 +76,8 @@ vmem_mmap_alloc(vmem_t *src, size_t size, int vmflags)
 #ifndef _WIN32
 	if (ret != NULL
 		&&
-#ifdef __native_client__
-	    mmap_pseudo(size) == NULL
-#else
 	    mmap(ret, size, ALLOC_PROT, ALLOC_FLAGS | MAP_FIXED, -1, 0) ==
 	    MAP_FAILED
-#endif
 		) {
 		vmem_free(src, ret, size);
 		vmem_reap();
@@ -133,10 +95,6 @@ vmem_mmap_alloc(vmem_t *src, size_t size, int vmflags)
 static void
 vmem_mmap_free(vmem_t *src, void *addr, size_t size)
 {
-#ifdef __native_client__
-    fprintf(stderr, "vmem_mmap_free::skipped\n");
-    return;
-#endif
 	int old_errno = errno;
 #ifdef _WIN32
 	VirtualFree(addr, size, MEM_RELEASE);
@@ -160,10 +118,6 @@ vmem_mmap_top_alloc(vmem_t *src, size_t size, int vmflags)
 		errno = old_errno;
 		return (ret);
 	}
-
-#ifdef __native_client__
-	buf = mmap_pseudo(size);
-#else
 	/*
 	 * Need to grow the heap
 	 */
@@ -184,7 +138,6 @@ vmem_mmap_top_alloc(vmem_t *src, size_t size, int vmflags)
 			, -1, 0);
 #endif
 
-#endif //__native_client__
 	if (buf != MAP_FAILED) {
 		ret = _vmem_extend_alloc(src, buf, size, size, vmflags);
 		if (ret != NULL)

@@ -53,5 +53,3 @@ strlcpy(char *dst, const char *src, size_t len)
 	dst[copied] = '\0';
 	return (slen);
 }
-
-

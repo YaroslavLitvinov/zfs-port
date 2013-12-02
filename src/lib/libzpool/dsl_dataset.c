@@ -1455,7 +1455,9 @@ dsl_dataset_destroy_sync(void *arg1, void *tag, cred_t *cr, dmu_tx_t *tx)
 		dsl_dataset_set_reservation_sync(ds, &val, cr, tx);
 		ASSERT3U(ds->ds_reserved, ==, 0);
 	}
+
 	ASSERT(RW_WRITE_HELD(&dp->dp_config_rwlock));
+
 	dsl_pool_ds_destroyed(ds, tx);
 
 	obj = ds->ds_object;
@@ -1782,7 +1784,9 @@ dsl_dataset_snapshot_sync(void *arg1, void *arg2, cred_t *cr, dmu_tx_t *tx)
 	uint64_t dsobj, crtxg;
 	objset_t *mos = dp->dp_meta_objset;
 	int err;
+
 	ASSERT(RW_WRITE_HELD(&dp->dp_config_rwlock));
+
 	/*
 	 * The origin's ds_creation_txg has to be < TXG_INITIAL
 	 */

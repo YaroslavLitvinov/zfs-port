@@ -1,16 +1,9 @@
-###########################################################
-# ZRT nvram file, setup cmd line args, environment vars   #
-###########################################################
-[env]
-name=ZFS_DEBUG, value=on
-
-[args]
-
 [mapping]
+channel=/dev/ztest.0a,       mode=file
 channel=/dev/trace.unparsed, mode=char
 
 [time]
 seconds=1337012520
 
 [debug]
-verbosity=4
+verbosity=2

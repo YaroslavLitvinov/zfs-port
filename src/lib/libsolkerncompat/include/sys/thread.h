@@ -30,16 +30,11 @@
 
 typedef pthread_t kthread_t;
 
-extern kthread_t *zk_thread_create(void (*func)(void*), void *arg);
+extern kthread_t *zk_thread_create(void (*func)(), void *arg);
 
 #define thread_create(stk, stksize, func, arg, len, pp, state, pri) zk_thread_create(func, arg)
 #define thread_exit(r) pthread_exit(NULL)
-
-#ifdef __native_client__
-# define thr_self() 1
-#else
-# define thr_self() pthread_self()
-#endif
+#define thr_self() pthread_self()
 
 #define curthread ((void *)(uintptr_t)thr_self())
 

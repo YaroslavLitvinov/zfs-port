@@ -213,7 +213,6 @@
 extern "C" {
 #endif
 
-
 /*
  * The following set of definitions characterize Solaris on AMD's
  * 64-bit systems.

@@ -36,7 +36,7 @@
  * contributors.
  */
 
-#ifdef ZVM_COW
+
 
 
 #include <sys/types.h>
@@ -333,5 +333,3 @@ pn_addslash(struct pathname *pnp)
 	pnp->pn_path[pnp->pn_pathlen] = '\0';
 	return (0);
 }
-
-#endif //ZVM_COW

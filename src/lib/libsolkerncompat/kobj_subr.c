@@ -23,8 +23,6 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
-
 #include <string.h>
 #include <strings.h>
 
@@ -48,5 +46,3 @@ strlcat(char *dst, const char *src, size_t dstsize)
 	dst[l1+copied] = '\0';
 	return (l1 + l2);
 }
-
-#endif //ZVM_COW

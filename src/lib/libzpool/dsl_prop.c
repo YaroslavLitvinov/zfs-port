@@ -76,9 +76,8 @@ dsl_prop_get_dd(dsl_dir_t *dd, const char *propname,
 	objset_t *mos = dd->dd_pool->dp_meta_objset;
 	zfs_prop_t prop;
 
-#ifndef __native_client__
 	ASSERT(RW_LOCK_HELD(&dd->dd_pool->dp_config_rwlock));
-#endif
+
 	if (setpoint)
 		setpoint[0] = '\0';
 
@@ -89,9 +88,7 @@ dsl_prop_get_dd(dsl_dir_t *dd, const char *propname,
 	 * ouside this loop.
 	 */
 	for (; dd != NULL; dd = dd->dd_parent) {
-#ifndef __native_client__
 		ASSERT(RW_LOCK_HELD(&dd->dd_pool->dp_config_rwlock));
-#endif
 		err = zap_lookup(mos, dd->dd_phys->dd_props_zapobj,
 		    propname, intsz, numint, buf);
 		if (err != ENOENT) {
@@ -116,9 +113,7 @@ int
 dsl_prop_get_ds(dsl_dataset_t *ds, const char *propname,
     int intsz, int numint, void *buf, char *setpoint)
 {
-#ifndef __native_client__
 	ASSERT(RW_LOCK_HELD(&ds->ds_dir->dd_pool->dp_config_rwlock));
-#endif //__native_client__
 
 	if (ds->ds_phys->ds_props_obj) {
 		int err = zap_lookup(ds->ds_dir->dd_pool->dp_meta_objset,
@@ -151,9 +146,8 @@ dsl_prop_register(dsl_dataset_t *ds, const char *propname,
 	dsl_prop_cb_record_t *cbr;
 	int err;
 	int need_rwlock;
-#ifndef __native_client__
+
 	need_rwlock = !RW_WRITE_HELD(&dp->dp_config_rwlock);
-#endif
 	if (need_rwlock)
 		rw_enter(&dp->dp_config_rwlock, RW_READER);
 
@@ -286,9 +280,8 @@ dsl_prop_changed_notify(dsl_pool_t *dp, uint64_t ddobj,
 	zap_attribute_t *za;
 	int err;
 	uint64_t dummyval;
-#ifndef __native_client__
+
 	ASSERT(RW_WRITE_HELD(&dp->dp_config_rwlock));
-#endif
 	err = dsl_dir_open_obj(dp, ddobj, NULL, FTAG, &dd);
 	if (err)
 		return;

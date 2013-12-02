@@ -8,10 +8,6 @@
 
 #include "config.h"
 
-#ifdef ZVM_COW
-#include "zvm_stub.h"
-#endif //ZVM_COW
-
 #include <stdint.h>
 #include <pthread.h>
 
@@ -59,28 +55,14 @@ static INLINE hrtime_t gethrtime(void) {
   gettimeofday(&tv, NULL);
   return (((u_int64_t)tv.tv_sec) << 32) | tv.tv_usec;
 }
-
-#ifdef __native_client__
-# define thr_self()                1
-#else
 # define thr_self()                pthread_self()
-#endif
-
 static INLINE thread_t _thr_self(void) {
   return thr_self();
 }
 #if defined(_MACH_PORT_T)
-#ifdef ZVM_ENABLE
 #define CPUHINT() (pthread_mach_thread_np(pthread_self()))
-#else
-#define CPUHINT()
-#endif //ZVM_ENABLE
 #endif
-#ifdef ZVM_ENABLE
 # define thr_sigsetmask            pthread_sigmask
-#else
-# define thr_sigsetmask
-#endif //ZVM_ENABLE
 
 #define THR_BOUND     1
 #define THR_DETACHED  2
@@ -90,10 +72,6 @@ static INLINE int thr_create(void *stack_base,
   size_t stack_size, THR_RETURN (THR_API *start_func)(void*),
   void *arg, long flags, thread_t *new_thread_ID)
 {
-#ifdef __native_client__
-    start_func(arg);
-    return 0;
-#else
   int ret;
   pthread_attr_t attr;
 
@@ -105,10 +83,9 @@ static INLINE int thr_create(void *stack_base,
   ret = pthread_create(new_thread_ID, &attr, start_func, arg);
   pthread_attr_destroy(&attr);
   return ret;
-#endif
 }
 
-#ifdef ZVM_ENABLE
+
 # define mutex_init(mp, type, arg) pthread_mutex_init(mp, NULL)
 # define mutex_lock(mp)            pthread_mutex_lock(mp)
 # define mutex_unlock(mp)          pthread_mutex_unlock(mp)
@@ -126,25 +103,6 @@ static INLINE int thr_create(void *stack_base,
 # define cond_destroy(c)           pthread_cond_destroy(c)
 # define cond_timedwait            pthread_cond_timedwait
 # define _cond_timedwait           pthread_cond_timedwait
-#else
-# define mutex_init(mp, type, arg) 0
-# define mutex_lock(mp) 0
-# define mutex_unlock(mp) 0
-# define mutex_destroy(mp) 0
-# define mutex_trylock(mp) 0
-# define DEFAULTMUTEX              PTHREAD_MUTEX_INITIALIZER
-# define DEFAULTCV                 PTHREAD_COND_INITIALIZER
-# define MUTEX_HELD(mp)            1 /* not really, but only used in an assert */
-
-# define cond_init(c, type, arg) 0
-# define cond_wait(c, m)           stub_pthread_cond_wait(c, m)
-# define _cond_wait(c, m)          stub_pthread_cond_wait(c, m)
-# define cond_signal(c) 0
-# define cond_broadcast(c) 0
-# define cond_destroy(c) 0
-# define cond_timedwait            stub_pthread_cond_timedwait
-# define _cond_timedwait           stub_pthread_cond_timedwait
-#endif //ZVM_ENABLE
 
 #ifndef RTLD_FIRST
 # define RTLD_FIRST 0
