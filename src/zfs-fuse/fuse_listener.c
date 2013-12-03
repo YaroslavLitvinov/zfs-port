@@ -32,7 +32,9 @@
 #include <sys/disp.h>
 #include <sys/kmem.h>
 #include <errno.h>
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 
 #include "fuse.h"
 #include "fuse_listener.h"

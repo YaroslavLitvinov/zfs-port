@@ -25,7 +25,6 @@
 
 
 
-#include <assert.h>
 #include <sys/zfs_context.h>
 #include <sys/avl.h>
 #include <string.h>

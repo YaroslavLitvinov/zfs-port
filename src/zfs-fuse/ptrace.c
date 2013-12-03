@@ -48,7 +48,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 #include <sys/debug.h>
 
 #ifdef _KERNEL

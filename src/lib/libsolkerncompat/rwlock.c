@@ -23,13 +23,18 @@
  * Use is subject to license terms.
  */
 
+#ifndef __native_client__
+#include <pthread.h>
+#else
+#include <pth/pthread.h>
+#endif //__native_client__
+
 #include <sys/debug.h>
 #include <sys/mutex.h>
 #include <sys/rwlock.h>
 #include <sys/thread.h>
 #include <sys/types.h>
 
-#include <pthread.h>
 #include <errno.h>
 
 /*ARGSUSED*/

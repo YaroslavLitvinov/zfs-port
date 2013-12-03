@@ -28,7 +28,9 @@
 #ifndef _SOL_THREAD_H
 #define _SOL_THREAD_H
 
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 #include <assert.h>
 
 /*

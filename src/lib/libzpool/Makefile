@@ -14,6 +14,7 @@ KOBJECTS := $(filter-out $(NOT_KERNEL_OBJECTS),$(OBJECTS))
 all: libzpool-kernel.a libzpool-user.a
 
 libzpool-user.a: CFLAGS := $(TCFLAGS) \
+-include "pth/pthread.h" \
 -I$(PROJ_ROOT)/lib/libsolcompat/include -I$(PROJ_ROOT)/lib/libsolcompat/include/$(ARCH) \
 -Iinclude
 libzpool-user.a: $(OBJECTS)
@@ -23,6 +24,7 @@ libzpool-user.a: $(OBJECTS)
 #build libzpool kernel version, remove unwanted files
 libzpool-kernel.a: CFLAGS := $(TCFLAGS) \
 -D_KERNEL \
+-include "pth/pthread.h" \
 -I$(PROJ_ROOT)/lib/libsolkerncompat/include -I$(PROJ_ROOT)/lib/libsolkerncompat/include/$(ARCH)
 libzpool-kernel.a: $(KOBJECTS)
 	$(AR) rcs $@ $^

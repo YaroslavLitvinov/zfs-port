@@ -26,7 +26,9 @@
 
 
 #include <sys/zfs_context.h>
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 
 int taskq_now;
 

@@ -31,7 +31,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 
 #include "libsolkerncompat.h"
 #include "zfs_ioctl.h"

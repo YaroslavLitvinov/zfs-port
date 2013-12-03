@@ -24,6 +24,12 @@
  * Use is subject to license terms.
  */
 
+#ifndef __native_client__
+#include <pthread.h>
+#else
+#include <pth/pthread.h>
+#endif //__native_client__
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,7 +43,6 @@
 #include <sys/avl.h>
 #include <sys/uio.h>
 #include <fcntl.h>
-#include <pthread.h>
 
 #include <sys/fs/zfs.h>
 

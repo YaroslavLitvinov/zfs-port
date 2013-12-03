@@ -51,7 +51,9 @@
 #include <sys/vmem.h>
 #endif
 #include <unistd.h>
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 #include <sys/debug.h>
 
 #ifdef _KERNEL

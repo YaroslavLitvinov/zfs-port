@@ -24,13 +24,18 @@
  * Use is subject to license terms.
  */
 
+#include <errno.h>
+#ifndef __native_client__
+#include <pthread.h>
+#else
+#include <pth/pthread.h>
+#endif //__native_client__
+
 #include <sys/debug.h>
 #include <sys/mutex.h>
 #include <sys/thread.h>
 #include <sys/types.h>
 
-#include <errno.h>
-#include <pthread.h>
 
 void
 zmutex_init(kmutex_t *mp)

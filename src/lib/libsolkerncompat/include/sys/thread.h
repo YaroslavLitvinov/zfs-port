@@ -26,7 +26,9 @@
 #ifndef _SYS_THREAD_H
 #define _SYS_THREAD_H
 
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 
 typedef pthread_t kthread_t;
 

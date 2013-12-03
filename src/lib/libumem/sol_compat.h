@@ -8,8 +8,8 @@
 
 #include "config.h"
 
+#include <stddef.h>
 #include <stdint.h>
-#include <pthread.h>
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>

@@ -25,11 +25,16 @@
  * Use is subject to license terms.
  */
 
+#ifndef __native_client__
+#include <pthread.h>
+#else
+#include <pth/pthread.h>
+#endif //__native_client__
+
 #include <sys/thread.h>
 #include <sys/debug.h>
 #include <sys/types.h>
 
-#include <pthread.h>
 
 static kthread_t s_thread;
 

@@ -27,7 +27,9 @@
 #ifndef _SYS_MUTEX_H
 #define	_SYS_MUTEX_H
 
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 
 typedef struct kmutex {
 	void	*m_owner;

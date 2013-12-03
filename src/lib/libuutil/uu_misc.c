@@ -25,13 +25,17 @@
  */
 
 
+#ifndef __native_client__
+#include <pthread.h>
+#else
+#include <pth/pthread.h>
+#endif //__native_client__
 
 #include "libuutil_common.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <libintl.h>
-#include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
