@@ -15,7 +15,7 @@ CFLAGS += \
 
 SOURCES = ztest.c ../../zfs-test/ptrace.c
 
-LD_LIBRARIES=-lz -lrt
+LD_LIBRARIES=-lz -lrt -lcontext
 LDLIBZPOOL_FLAGS=-L$(PROJ_ROOT)/lib/libzpool -lzpool-user
 LDLIBCOMMON_FLAGS=-L$(PROJ_ROOT)/lib/libzfscommon -lzfscommon-user
 LDLIBNVPAIR_FLAGS=-L$(PROJ_ROOT)/lib/libnvpair -lnvpair-user
@@ -43,7 +43,7 @@ $(NAME).nexe: $(OBJECTS)
 config:
 	mkdir trace -p
 #genmanifest
-	TIMEOUT=20 \
+	TIMEOUT=2000 \
 	ABS_PATH=$(CURDIR) \
 	NAME=$(NAME) \
 	CHANNELS_INCLUDE=channels.manifest.include \

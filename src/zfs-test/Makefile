@@ -16,7 +16,7 @@ SOURCES = test1.c #ptrace.c
 #../zfs-fuse/zfs_operations.c
 #../zfs-fuse/util.c
 
-LD_LIBRARIES=-lz -lrt -lpthread
+LD_LIBRARIES=-lz -lrt -lpthread -lcontext
 LDLIBZPOOL_FLAGS=-L$(PROJ_ROOT)/lib/libzpool -lzpool-kernel
 LDLIBCOMMON_FLAGS=-L$(PROJ_ROOT)/lib/libzfscommon -lzfscommon-kernel
 LDLIBCOMMAND_FLAGS=-L$(PROJ_ROOT)/lib/libzfscommand -lzfscommand
@@ -48,6 +48,7 @@ zfs-test.nexe: $(OBJECTS)
 
 config:
 	mkdir trace -p
+	touch $(NAME).pipe
 #genmanifest
 	TIMEOUT=5000 \
 	ABS_PATH=$(CURDIR) \
@@ -56,7 +57,7 @@ config:
 	$(PROJ_ROOT)/template.sh $(PROJ_ROOT)/manifest.template > $(NAME).manifest
 #gennvram
 	SECONDS=1337012520 \
-	VERBOSITY=2 \
+	VERBOSITY=1 \
 	$(PROJ_ROOT)/template.sh $(PROJ_ROOT)/nvram.template  > $(NAME).nvram
 #gen gdb script
 	NEXE_PATH=$(CURDIR)/$(NAME).nexe \

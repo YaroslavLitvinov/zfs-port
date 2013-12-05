@@ -74,6 +74,7 @@
  * from plain old race conditions.
  */
 
+#include <pth/pthread.h>
 #include <sys/zfs_context.h>
 #include <sys/spa.h>
 #include <sys/dmu.h>
@@ -3407,11 +3408,9 @@ main(int argc, char **argv)
 	char timebuf[100];
 	char numbuf[6];
 
-#ifdef PORT_ARTIFACT
 #ifdef __native_client__
 	umem_startup();
 #endif
-#endif //PORT_ARTIFACT
 
 	(void) setvbuf(stdout, NULL, _IOLBF, 0);
 

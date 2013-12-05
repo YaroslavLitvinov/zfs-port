@@ -58,13 +58,15 @@ int main(int argc, char** argv){
     int c=0;
     int i;
     const int size = 1024*1024;
-    for (i=0; i < 1000000; i++){
-	//      c+=size+i;
-	//	printf("i=%d alloc size=%d, all allocated size=%d\n", 
-	//       i, size+i, c );
-	void* addr = umem_alloc(size, UMEM_NOFAIL);
+    for (i=0; i < 100000; i++){
+	c+=size+i;
+	void* addr = umem_alloc(size+i, UMEM_NOFAIL);
 	if ( addr != NULL ){
-	    umem_free(addr, size);
+	    printf("OK i=%d alloc size=%d, addr=%p\n", i, size+i, addr );
+	    umem_free(addr, size+i);
+	}
+	else{
+	    printf("FAIL i=%d alloc size=%d, addr=%p\n", i, size+i, addr );
 	}
     }
 

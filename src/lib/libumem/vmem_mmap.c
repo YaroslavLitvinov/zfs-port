@@ -98,6 +98,10 @@ vmem_mmap_free(vmem_t *src, void *addr, size_t size)
 	int old_errno = errno;
 #ifdef _WIN32
 	VirtualFree(addr, size, MEM_RELEASE);
+#elif defined(__native_client__)
+	/*For ZRT do replace mmap PROT_NONE by just unmaping page. 
+	 Can't emulate PROT_NONE flag using mmap.*/
+	munmap(addr, size);
 #else
 	(void) mmap(addr, size, FREE_PROT, FREE_FLAGS | MAP_FIXED, -1, 0);
 #endif

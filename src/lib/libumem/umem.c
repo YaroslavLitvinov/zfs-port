@@ -592,9 +592,9 @@ umem_cache_t		umem_null_cache = {
 	}, {
 		NULL, 0, 0, 0, 0
 	}, 
-#ifdef DEBUG
-	{ "" }, /*padding*/
-#endif
+/* #ifdef DEBUG */
+/* 	{ "" }, /\*padding*\/ */
+/* #endif */
 	{
 	    {
 		DEFAULTMUTEX,		/* start of CPU cache */
@@ -1025,6 +1025,9 @@ umem_alloc_retry(umem_cache_t *cp, int umflag)
 
 		(void) mutex_lock(&umem_nofail_exit_lock);
 		umem_nofail_exit_thr = thr_self();
+#ifdef DEBUG
+		printf("umem alloc FAILED\n");
+#endif //DEBUG
 		exit(result & 0xFF);
 		/*NOTREACHED*/
 	}
