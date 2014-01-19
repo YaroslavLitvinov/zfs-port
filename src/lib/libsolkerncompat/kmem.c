@@ -23,8 +23,6 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
-
 #include <sys/kmem.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,5 +79,3 @@ error:
 	exit(1);
 #endif //ZVM_ENABLE
 }
-
-#endif //ZVM_COW

@@ -28,7 +28,9 @@
 #ifndef _SOL_THREAD_H
 #define _SOL_THREAD_H
 
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 #include <assert.h>
 
 /*
@@ -41,8 +43,6 @@ typedef pthread_cond_t cond_t;
 typedef pthread_rwlock_t rwlock_t;
 
 #define USYNC_THREAD 0
-
-#ifdef ZVM_ENABLE
 
 #define thr_self()               pthread_self()
 #define thr_equal(a,b)           pthread_equal(a,b)
@@ -66,32 +66,6 @@ typedef pthread_rwlock_t rwlock_t;
 #define cond_signal(l)           pthread_cond_signal(l)
 #define cond_broadcast(l)        pthread_cond_broadcast(l)
 
-#else
-
-#define thr_self()               1
-#define thr_equal(a,b)           0
-#define thr_join(t,d,s)          0
-#define thr_exit(r)              0
-#define _mutex_init(l,f,a)       0
-#define _mutex_destroy(l)        0
-#define mutex_lock(l)            0
-#define mutex_trylock(l)         0
-#define mutex_unlock(l)          0
-#define rwlock_init(l,f,a)       0
-#define rwlock_destroy(l)        0
-#define rw_rdlock(l)             0
-#define rw_wrlock(l)             0
-#define rw_tryrdlock(l)          0
-#define rw_trywrlock(l)          0
-#define rw_unlock(l)             0
-#define cond_init(l,f,a)         0
-#define cond_destroy(l)          0
-#define cond_wait(l,m)           0
-#define cond_signal(l)           0
-#define cond_broadcast(l)        0
-
-#endif //ZVM_ENABLE
-
 #define zfsfuse_thr_main()       (0)
 
 #define THR_BOUND     0x00000001  /* = PTHREAD_SCOPE_SYSTEM */
@@ -100,26 +74,24 @@ typedef pthread_rwlock_t rwlock_t;
 #define THR_SUSPENDED 0x00000080
 #define THR_DAEMON    0x00000100
 
-static inline int thr_create(void *stack_base, size_t stack_size, void *(*start_func) (void*), void *arg, long flags, thread_t *new_thread_ID) {
-#ifdef __native_client__
-    start_func(arg);
-    return 0;
-#else
+static inline int thr_create(void *stack_base, size_t stack_size, void *(*start_func) (), void *arg, long flags, thread_t *new_thread_ID) {
 	assert(stack_base == NULL);
 	assert(stack_size == 0);
 	assert((flags & ~THR_BOUND & ~THR_DETACHED) == 0);
 
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
+
 	if(flags & THR_DETACHED)
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
 	/* This function ignores the THR_BOUND flag, since NPTL doesn't seem to support PTHREAD_SCOPE_PROCESS */
 
 	int ret = pthread_create(new_thread_ID, &attr, start_func, arg);
 
 	pthread_attr_destroy(&attr);
+
 	return ret;
-#endif
 }
 
 #endif

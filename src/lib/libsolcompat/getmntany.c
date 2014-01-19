@@ -28,8 +28,6 @@
 /*	Copyright (c) 1988 AT&T	*/
 /*	  All Rights Reserved  	*/
 
-#ifdef ZVM_COW
-
 #include <stdio.h>
 #include <string.h>
 #include <mntent.h>
@@ -94,5 +92,3 @@ int getextmntent(FILE *fp, struct extmnttab *mp, int len)
 
 	return ret;
 }
-
-#endif //ZVM_COW

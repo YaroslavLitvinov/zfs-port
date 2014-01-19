@@ -70,11 +70,11 @@ struct vmem_seg {
 	uint8_t		vs_type;	/* alloc, free, span */
 	uint8_t		vs_import;	/* non-zero if segment was imported */
 	uint8_t		vs_depth;	/* stack depth if UMF_AUDIT active */
-#ifdef DEBUG
-    hrtime_t        align1;
-    hrtime_t        align2;
-    hrtime_t        align4;
-#endif
+/* #ifdef DEBUG */
+/*     hrtime_t        align1; */
+/*     hrtime_t        align2; */
+/*     hrtime_t        align4; */
+/* #endif */
 	/*
 	 * The following fields are present only when UMF_AUDIT is set.
 	 */
@@ -88,9 +88,9 @@ typedef struct vmem_freelist {
 	uintptr_t	vs_end;		/* segment size */
 	vmem_seg_t	*vs_knext;	/* next of kin */
 	vmem_seg_t	*vs_kprev;	/* prev of kin */
-#ifdef DEBUG
-    char             padding[16];
-#endif
+/* #ifdef DEBUG */
+/*     char             padding[16]; */
+/* #endif */
 } vmem_freelist_t;
 
 #define	VS_SIZE(vsp)	((vsp)->vs_end - (vsp)->vs_start)
@@ -153,9 +153,9 @@ struct vmem {
 	void		*vm_qcache[VMEM_NQCACHE_MAX];	/* quantum caches */
 	vmem_freelist_t	vm_freelist[VMEM_FREELISTS + 1]; /* power-of-2 flists */
 	vmem_kstat_t	vm_kstat;	/* kstat data */
-#ifdef DEBUG
-    char   padding[1360];
-#endif
+/* #ifdef DEBUG */
+/*     char   padding[1360]; */
+/* #endif */
 };
 
 /*

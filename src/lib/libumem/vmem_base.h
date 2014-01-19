@@ -78,10 +78,6 @@ extern void vmem_sbrk_release(void);
 
 extern void vmem_no_debug(void);
 
-#ifdef __native_client__
-    void magic1(void);
-#endif
-
 #ifdef	__cplusplus
 }
 #endif

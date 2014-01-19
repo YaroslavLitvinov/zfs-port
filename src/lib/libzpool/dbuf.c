@@ -166,6 +166,7 @@ dbuf_hash_insert(dmu_buf_impl_t *db)
 	h->hash_table[idx] = db;
 	mutex_exit(DBUF_HASH_MUTEX(h, idx));
 	atomic_add_64(&dbuf_hash_count, 1);
+
 	return (NULL);
 }
 
@@ -188,9 +189,8 @@ dbuf_hash_remove(dmu_buf_impl_t *db)
 	 */
 	ASSERT(refcount_is_zero(&db->db_holds));
 	ASSERT(db->db_state == DB_EVICTING);
-#ifndef __native_client__
 	ASSERT(!MUTEX_HELD(&db->db_mtx));
-#endif
+
 	mutex_enter(DBUF_HASH_MUTEX(h, idx));
 	dbp = &h->hash_table[idx];
 	while ((dbf = *dbp) != db) {
@@ -208,9 +208,8 @@ static arc_evict_func_t dbuf_do_evict;
 static void
 dbuf_evict_user(dmu_buf_impl_t *db)
 {
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&db->db_mtx));
-#endif
+
 	if (db->db_level != 0 || db->db_evict_func == NULL)
 		return;
 
@@ -225,9 +224,7 @@ dbuf_evict_user(dmu_buf_impl_t *db)
 void
 dbuf_evict(dmu_buf_impl_t *db)
 {
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&db->db_mtx));
-#endif
 	ASSERT(db->db_buf == NULL);
 	ASSERT(db->db_data_pending == NULL);
 
@@ -289,9 +286,9 @@ static void
 dbuf_verify(dmu_buf_impl_t *db)
 {
 	dnode_t *dn = db->db_dnode;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&db->db_mtx));
-#endif
+
 	if (!(zfs_flags & ZFS_DEBUG_DBUF_VERIFY))
 		return;
 
@@ -352,13 +349,11 @@ dbuf_verify(dmu_buf_impl_t *db)
 			 * have the struct_rwlock.  XXX indblksz no longer
 			 * grows.  safe to do this now?
 			 */
-			//#ifndef __native_client__
 			if (RW_WRITE_HELD(&db->db_dnode->dn_struct_rwlock)) {
 				ASSERT3P(db->db_blkptr, ==,
 				    ((blkptr_t *)db->db_parent->db.db_data +
 				    db->db_blkid % epb));
 			}
-			//#endif
 		}
 	}
 	if ((db->db_blkptr == NULL || BP_IS_HOLE(db->db_blkptr)) &&
@@ -384,9 +379,7 @@ dbuf_verify(dmu_buf_impl_t *db)
 static void
 dbuf_update_data(dmu_buf_impl_t *db)
 {
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&db->db_mtx));
-#endif
 	if (db->db_level == 0 && db->db_user_data_ptr_ptr) {
 		ASSERT(!refcount_is_zero(&db->db_holds));
 		*db->db_user_data_ptr_ptr = db->db.db_data;
@@ -396,9 +389,7 @@ dbuf_update_data(dmu_buf_impl_t *db)
 static void
 dbuf_set_data(dmu_buf_impl_t *db, arc_buf_t *buf)
 {
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&db->db_mtx));
-#endif
 	ASSERT(db->db_buf == NULL || !arc_has_callback(db->db_buf));
 	db->db_buf = buf;
 	if (buf != NULL) {
@@ -469,11 +460,9 @@ dbuf_read_impl(dmu_buf_impl_t *db, zio_t *zio, uint32_t *flags)
 	arc_buf_t *pbuf;
 
 	ASSERT(!refcount_is_zero(&db->db_holds));
-
 	/* We need the struct_rwlock to prevent db_blkptr from changing. */
 	ASSERT(RW_LOCK_HELD(&dn->dn_struct_rwlock));
 	ASSERT(MUTEX_HELD(&db->db_mtx));
-
 	ASSERT(db->db_state == DB_UNCACHED);
 	ASSERT(db->db_buf == NULL);
 
@@ -576,6 +565,7 @@ dbuf_read(dmu_buf_impl_t *db, zio_t *zio, uint32_t flags)
 		dbuf_read_impl(db, zio, &flags);
 
 		/* dbuf_read_impl has dropped db_mtx for us */
+
 		if (prefetch)
 			dmu_zfetch(&db->db_dnode->dn_zfetch, db->db.db_offset,
 			    db->db.db_size, flags & DB_RF_CACHED);
@@ -650,9 +640,8 @@ static void
 dbuf_fix_old_data(dmu_buf_impl_t *db, uint64_t txg)
 {
 	dbuf_dirty_record_t *dr = db->db_last_dirty;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&db->db_mtx));
-#endif
 	ASSERT(db->db.db_data != NULL);
 	ASSERT(db->db_level == 0);
 	ASSERT(db->db.db_object != DMU_META_DNODE_OBJECT);
@@ -691,9 +680,8 @@ dbuf_unoverride(dbuf_dirty_record_t *dr)
 {
 	dmu_buf_impl_t *db = dr->dr_dbuf;
 	uint64_t txg = dr->dr_txg;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&db->db_mtx));
-#endif
 	ASSERT(dr->dt.dl.dr_override_state != DR_IN_DMU_SYNC);
 	ASSERT(db->db_level == 0);
 
@@ -836,9 +824,7 @@ dbuf_block_freeable(dmu_buf_impl_t *db)
 	 * If it's syncing, then db_last_dirty will be set
 	 * so we'll ignore db_blkptr.
 	 */
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&db->db_mtx));
-#endif
 	if (db->db_last_dirty)
 		birth_txg = db->db_last_dirty->dr_txg;
 	else if (db->db_blkptr)
@@ -858,12 +844,12 @@ dbuf_new_size(dmu_buf_impl_t *db, int size, dmu_tx_t *tx)
 	arc_buf_t *buf, *obuf;
 	int osize = db->db.db_size;
 	arc_buf_contents_t type = DBUF_GET_BUFC_TYPE(db);
-	//#ifndef __native_client__
+
 	ASSERT(db->db_blkid != DB_BONUS_BLKID);
 
 	/* XXX does *this* func really need the lock? */
 	ASSERT(RW_WRITE_HELD(&db->db_dnode->dn_struct_rwlock));
-	//#endif
+
 	/*
 	 * This call to dbuf_will_dirty() with the dn_struct_rwlock held
 	 * is OK, because there can be no other references to the db
@@ -1100,12 +1086,12 @@ dbuf_dirty(dmu_buf_impl_t *db, dmu_tx_t *tx)
 		 */
 		dnode_willuse_space(dn, -willfree, tx);
 	}
-	//#ifndef __native_client__
+
 	if (!RW_WRITE_HELD(&dn->dn_struct_rwlock)) {
 		rw_enter(&dn->dn_struct_rwlock, RW_READER);
 		drop_struct_lock = TRUE;
 	}
-	//#endif
+
 	if (db->db_level == 0) {
 		dnode_new_blkid(dn, db->db_blkid, tx, drop_struct_lock);
 		ASSERT(dn->dn_maxblkid >= db->db_blkid);
@@ -1260,7 +1246,6 @@ dbuf_will_dirty(dmu_buf_impl_t *db, dmu_tx_t *tx)
 
 	if (RW_WRITE_HELD(&db->db_dnode->dn_struct_rwlock))
 		rf |= DB_RF_HAVESTRUCT;
-
 	(void) dbuf_read(db, NULL, rf);
 	(void) dbuf_dirty(db, tx);
 }
@@ -1324,9 +1309,8 @@ dbuf_clear(dmu_buf_impl_t *db)
 	dmu_buf_impl_t *parent = db->db_parent;
 	dmu_buf_impl_t *dndb = dn->dn_dbuf;
 	int dbuf_gone = FALSE;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&db->db_mtx));
-#endif
 	ASSERT(refcount_is_zero(&db->db_holds));
 
 	dbuf_evict_user(db);
@@ -1346,13 +1330,13 @@ dbuf_clear(dmu_buf_impl_t *db)
 
 	db->db_state = DB_EVICTING;
 	db->db_blkptr = NULL;
-	//#ifndef __native_client__
+
 	if (db->db_blkid != DB_BONUS_BLKID && MUTEX_HELD(&dn->dn_dbufs_mtx)) {
 		list_remove(&dn->dn_dbufs, db);
 		dnode_rele(dn, db);
 		db->db_dnode = NULL;
 	}
-	//#endif
+
 	if (db->db_buf)
 		dbuf_gone = arc_buf_evict(db->db_buf);
 
@@ -1386,9 +1370,7 @@ dbuf_findbp(dnode_t *dn, int level, uint64_t blkid, int fail_sparse,
 	epbs = dn->dn_indblkshift - SPA_BLKPTRSHIFT;
 
 	ASSERT3U(level * epbs, <, 64);
-
 	ASSERT(RW_LOCK_HELD(&dn->dn_struct_rwlock));
-
 	if (level >= nlevels ||
 	    (blkid > (dn->dn_phys->dn_maxblkid >> (level * epbs)))) {
 		/* the buffer has no parent yet */
@@ -1505,10 +1487,10 @@ dbuf_do_evict(void *private)
 {
 	arc_buf_t *buf = private;
 	dmu_buf_impl_t *db = buf->b_private;
-#ifndef __native_client__
+
 	if (!MUTEX_HELD(&db->db_mtx))
 		mutex_enter(&db->db_mtx);
-#endif
+
 	ASSERT(refcount_is_zero(&db->db_holds));
 
 	if (db->db_state != DB_EVICTING) {
@@ -1722,9 +1704,8 @@ dbuf_hold_level(dnode_t *dn, int level, uint64_t blkid, void *tag)
 void
 dbuf_create_bonus(dnode_t *dn)
 {
-    //#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&dn->dn_struct_rwlock));
-	//#endif
+
 	ASSERT(dn->dn_bonus == NULL);
 	dn->dn_bonus = dbuf_create(dn, 0, DB_BONUS_BLKID, dn->dn_dbuf, NULL);
 }
@@ -1855,9 +1836,8 @@ static void
 dbuf_check_blkptr(dnode_t *dn, dmu_buf_impl_t *db)
 {
 	/* ASSERT(dmu_tx_is_syncing(tx) */
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&db->db_mtx));
-#endif
+
 	if (db->db_blkptr != NULL)
 		return;
 

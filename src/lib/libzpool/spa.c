@@ -457,6 +457,7 @@ void
 spa_get_errlists(spa_t *spa, avl_tree_t *last, avl_tree_t *scrub)
 {
 	ASSERT(MUTEX_HELD(&spa->spa_errlist_lock));
+
 	bcopy(&spa->spa_errlist_last, last, sizeof (avl_tree_t));
 	bcopy(&spa->spa_errlist_scrub, scrub, sizeof (avl_tree_t));
 
@@ -491,7 +492,6 @@ spa_activate(spa_t *spa)
 		    error, spa->spa_name);
 #endif
 
-	//#ifndef __native_client__
 	for (t = 0; t < ZIO_TYPES; t++) {
 		spa->spa_zio_issue_taskq[t] = taskq_create("spa_zio_issue",
 		    zio_taskq_threads, maxclsyspri, 50, INT_MAX,
@@ -500,7 +500,6 @@ spa_activate(spa_t *spa)
 		    zio_taskq_threads, maxclsyspri, 50, INT_MAX,
 		    TASKQ_PREPOPULATE);
 	}
-	//#endif
 
 	list_create(&spa->spa_dirty_list, sizeof (vdev_t),
 	    offsetof(vdev_t, vdev_dirty_node));
@@ -538,10 +537,8 @@ spa_deactivate(spa_t *spa)
 	list_destroy(&spa->spa_zio_list);
 
 	for (t = 0; t < ZIO_TYPES; t++) {
-#ifndef __native_client__
 		taskq_destroy(spa->spa_zio_issue_taskq[t]);
 		taskq_destroy(spa->spa_zio_intr_taskq[t]);
-#endif
 		spa->spa_zio_issue_taskq[t] = NULL;
 		spa->spa_zio_intr_taskq[t] = NULL;
 	}
@@ -1047,11 +1044,7 @@ spa_load(spa_t *spa, nvlist_t *config, spa_load_state_t state, int mosconfig)
 	 */
 	spa_config_enter(spa, RW_WRITER, FTAG);
 	spa->spa_ubsync.ub_version = version;
-#ifdef __native_client__
-	error = spa_config_parse(spa, &rvd, nvroot, NULL, ZVM_VDEV_ID, VDEV_ALLOC_LOAD);
-#else
 	error = spa_config_parse(spa, &rvd, nvroot, NULL, 0, VDEV_ALLOC_LOAD);
-#endif //__native_client__
 	spa_config_exit(spa, FTAG);
 
 	if (error != 0)
@@ -1945,11 +1938,7 @@ spa_create(const char *pool, nvlist_t *nvroot, nvlist_t *props,
 	 */
 	spa_config_enter(spa, RW_WRITER, FTAG);
 
-#ifdef __native_client__
-	error = spa_config_parse(spa, &rvd, nvroot, NULL, ZVM_VDEV_ID, VDEV_ALLOC_ADD);
-#else
 	error = spa_config_parse(spa, &rvd, nvroot, NULL, 0, VDEV_ALLOC_ADD);
-#endif
 
 	ASSERT(error != 0 || rvd != NULL);
 	ASSERT(error != 0 || spa->spa_root_vdev == rvd);
@@ -2233,9 +2222,7 @@ spa_import_common(const char *pool, nvlist_t *config, nvlist_t *props,
 }
 
 /* ZFSFUSE: not needed */
-#ifndef __native_client__
 #if 0
-#endif // __native_client__
 /*
  * Build a "root" vdev for a top level vdev read in from a rootpool
  * device label.
@@ -2447,9 +2434,7 @@ msg_out:
 
 	return (error);
 }
-#ifndef __native_client__
 #endif
-#endif // __native_client__
 
 /*
  * Import a non-root pool into the system.
@@ -3668,20 +3653,12 @@ spa_async_resume(spa_t *spa)
 static void
 spa_async_dispatch(spa_t *spa)
 {
-/* #ifdef __native_client__ */
-/*     ASSERT(0); */
-/* #endif */
 	mutex_enter(&spa->spa_async_lock);
 	if (spa->spa_async_tasks && !spa->spa_async_suspended &&
 	    spa->spa_async_thread == NULL &&
-	    rootdir != NULL && !vn_is_readonly(rootdir)){
-#ifdef __native_client__
-	    spa_async_thread(spa);
-#else
+	    rootdir != NULL && !vn_is_readonly(rootdir))
 		spa->spa_async_thread = thread_create(NULL, 0,
 		    spa_async_thread, spa, 0, &p0, TS_RUN, maxclsyspri);
-#endif
-	}
 	mutex_exit(&spa->spa_async_lock);
 }
 

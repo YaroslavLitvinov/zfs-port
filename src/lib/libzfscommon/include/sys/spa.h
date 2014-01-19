@@ -50,10 +50,6 @@ typedef struct traverse_handle traverse_handle_t;
 typedef struct spa_aux_vdev spa_aux_vdev_t;
 struct dsl_pool;
 
-#ifdef __native_client__
-#define ZVM_VDEV_ID 0
-#endif //__native_client__
-
 /*
  * General-purpose 32-bit and 64-bit bitfield encodings.
  */

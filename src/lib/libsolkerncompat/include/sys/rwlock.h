@@ -28,7 +28,9 @@
 #define	_SYS_RWLOCK_H
 
 #include <sys/mutex.h>
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 
 typedef struct krwlock {
 	kmutex_t   mutex;

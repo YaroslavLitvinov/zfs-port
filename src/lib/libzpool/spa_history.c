@@ -149,9 +149,9 @@ spa_history_write(spa_t *spa, void *buf, uint64_t len, spa_history_phys_t *shpp,
 	uint64_t firstwrite, phys_eof;
 	objset_t *mos = spa->spa_meta_objset;
 	int err;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&spa->spa_history_lock));
-#endif
+
 	/* see if we need to reset logical BOF */
 	while (shpp->sh_phys_max_off - shpp->sh_pool_create_len -
 	    (shpp->sh_eof - shpp->sh_bof) <= len) {

@@ -32,8 +32,9 @@
 extern int do_init();
 extern void do_daemon(const char *pidfile);
 extern void do_exit();
-//extern int do_zvm_mount();
-//extern int do_mount(char *spec, char *dir, int mflag, char *opt);
-//extern int do_umount(vfs_t *vfs, boolean_t force);
+#ifndef __native_client__
+extern int do_mount(char *spec, char *dir, int mflag, char *opt);
+extern int do_umount(vfs_t *vfs, boolean_t force);
+#endif //__native_client__
 
 #endif

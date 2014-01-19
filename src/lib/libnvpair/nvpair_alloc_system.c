@@ -24,7 +24,7 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
+
 
 #include <sys/nvpair.h>
 #include <stdlib.h>
@@ -66,5 +66,3 @@ nv_alloc_t nv_alloc_nosleep_def = {
 
 nv_alloc_t *nv_alloc_nosleep = &nv_alloc_nosleep_def;
 nv_alloc_t *nv_alloc_sleep = &nv_alloc_nosleep_def;
-
-#endif //#ifdef ZVM_COW

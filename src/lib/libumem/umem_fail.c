@@ -27,8 +27,6 @@
  * Portions Copyright 2006 OmniTI, Inc.
  */
 
-#ifdef ZVM_COW
-
 /* #pragma ident	"@(#)umem_fail.c	1.4	05/06/08 SMI" */
 
 /*
@@ -37,7 +35,9 @@
 
 #include "config.h"
 #include <sys/types.h>
+#ifndef __native_client__
 #include <signal.h>
+#endif //__native_client__
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
@@ -53,7 +53,6 @@ static mutex_t umem_exit_lock = DEFAULTMUTEX; /* protects umem_exiting */
 static int
 firstexit(int type)
 {
-#ifdef ZVM_ENABLE
 	if (umem_exiting)
 		return (0);
 
@@ -66,9 +65,6 @@ firstexit(int type)
 	(void) mutex_unlock(&umem_exit_lock);
 
 	return (1);
-#else
-	return 1;
-#endif //ZVM_ENABLE
 }
 
 /*
@@ -187,5 +183,3 @@ __umem_assert_failed(const char *assertion, const char *file, int line)
 	umem_do_abort();
 	/*NOTREACHED*/
 }
-
-#endif //ZVM_COW

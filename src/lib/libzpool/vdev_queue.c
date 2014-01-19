@@ -178,9 +178,9 @@ vdev_queue_io_to_issue(vdev_queue_t *vq, uint64_t pending_limit)
 	zio_t *fio, *lio, *aio, *dio;
 	avl_tree_t *tree;
 	uint64_t size;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&vq->vq_lock));
-#endif
+
 	if (avl_numnodes(&vq->vq_pending_tree) >= pending_limit ||
 	    avl_numnodes(&vq->vq_deadline_tree) == 0)
 		return (NULL);

@@ -25,13 +25,17 @@
  */
 
 
+#ifndef __native_client__
+#include <pthread.h>
+#else
+#include <pth/pthread.h>
+#endif //__native_client__
 
 #include "libuutil_common.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <libintl.h>
-#include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -79,35 +83,25 @@ uu_set_error(uint_t code)
 		return;
 	}
 #if defined(PTHREAD_ONCE_KEY_NP)
-#ifdef ZVM_ENABLE
 	if (pthread_key_create_once_np(&uu_error_key, NULL) != 0)
 		uu_error_key_setup = -1;
 	else
 		uu_error_key_setup = 1;
-#endif //ZVM_ENABLE
 #else	/* PTHREAD_ONCE_KEY_NP */
 	if (uu_error_key_setup == 0) {
-#ifdef ZVM_ENABLE
 		(void) pthread_mutex_lock(&uu_key_lock);
-#endif //ZVM_ENABLE
 		if (uu_error_key_setup == 0) {
-#ifdef ZVM_ENABLE
 			if (pthread_key_create(&uu_error_key, NULL) != 0)
 				uu_error_key_setup = -1;
 			else
 				uu_error_key_setup = 1;
-#endif //ZVM_ENABLE
 		}
-#ifdef ZVM_ENABLE
 		(void) pthread_mutex_unlock(&uu_key_lock);
-#endif //ZVM_ENABLE
 	}
 #endif	/* PTHREAD_ONCE_KEY_NP */
-#ifdef ZVM_ENABLE
 	if (uu_error_key_setup > 0)
 		(void) pthread_setspecific(uu_error_key,
 		    (void *)(uintptr_t)code);
-#endif //ZVM_ENABLE
 }
 
 uint32_t
@@ -118,14 +112,12 @@ uu_error(void)
 
 	if (uu_error_key_setup < 0)	/* can't happen? */
 		return (UU_ERROR_UNKNOWN);
-#ifdef ZVM_ENABLE
+
 	/*
 	 * Because UU_ERROR_NONE == 0, if uu_set_error() was
 	 * never called, then this will return UU_ERROR_NONE:
 	 */
 	return ((uint32_t)(uintptr_t)pthread_getspecific(uu_error_key));
-#endif //ZVM_ENABLE
-	return 0;
 }
 
 const char *
@@ -202,7 +194,7 @@ uu_panic(const char *format, ...)
 	va_list args;
 
 	va_start(args, format);
-#ifdef ZVM_ENABLE
+
 	(void) pthread_mutex_lock(&uu_panic_lock);
 	if (uu_panic_thread == 0) {
 		uu_panic_thread = pthread_self();
@@ -210,15 +202,14 @@ uu_panic(const char *format, ...)
 		va_copy(uu_panic_args, args);
 	}
 	(void) pthread_mutex_unlock(&uu_panic_lock);
-#endif //ZVM_ENABLE
+
 	(void) vfprintf(stderr, format, args);
-#ifdef ZVM_ENABLE
+
 	if (uu_panic_thread == pthread_self())
 		abort();
 	else
 		for (;;)
 			(void) pause();
-#endif //ZVM_ENABLE
 }
 
 int
@@ -233,12 +224,10 @@ assfail(const char *astring, const char *file, int line)
 static void
 uu_lockup(void)
 {
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_lock(&uu_panic_lock);
 #if !defined(PTHREAD_ONCE_KEY_NP)
 	(void) pthread_mutex_lock(&uu_key_lock);
 #endif
-#endif //ZVM_ENABLE
 	uu_avl_lockup();
 	uu_list_lockup();
 }
@@ -246,12 +235,10 @@ uu_lockup(void)
 static void
 uu_release(void)
 {
-#ifdef ZVM_ENABLE
 	(void) pthread_mutex_unlock(&uu_panic_lock);
 #if !defined(PTHREAD_ONCE_KEY_NP)
 	(void) pthread_mutex_unlock(&uu_key_lock);
 #endif
-#endif //ZVM_ENABLE
 	uu_avl_release();
 	uu_list_release();
 }
@@ -271,7 +258,5 @@ uu_init(void) __attribute__((constructor));
 static void
 uu_init(void)
 {
-#ifdef ZVM_ENABLE
 	(void) pthread_atfork(uu_lockup, uu_release, uu_release_child);
-#endif //ZVM_ENABLE
 }

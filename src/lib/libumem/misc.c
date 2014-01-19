@@ -38,7 +38,9 @@
 #if HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
+#ifndef __native_client__
 #include <signal.h>
+#endif //__native_client__
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>

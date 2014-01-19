@@ -23,8 +23,12 @@
  * Use is subject to license terms.
  */
 
+
+
 #include <sys/zfs_context.h>
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 
 int taskq_now;
 
@@ -103,15 +107,11 @@ taskq_dispatch(taskq_t *tq, task_func_t func, void *arg, uint_t tqflags)
 {
 	task_t *t;
 
-#ifndef __native_client__
-	if (taskq_now) 
-#endif //__native_client__
-	    {
+	if (taskq_now) {
 		func(arg);
 		return (1);
 	}
 
-#ifndef __native_client__
 	mutex_enter(&tq->tq_lock);
 	ASSERT(tq->tq_flags & TASKQ_ACTIVE);
 	if ((t = task_alloc(tq, tqflags)) == NULL) {
@@ -127,7 +127,6 @@ taskq_dispatch(taskq_t *tq, task_func_t func, void *arg, uint_t tqflags)
 	cv_signal(&tq->tq_dispatch_cv);
 	mutex_exit(&tq->tq_lock);
 	return (1);
-#endif //__native_client__
 }
 
 void
@@ -139,12 +138,7 @@ taskq_wait(taskq_t *tq)
 	mutex_exit(&tq->tq_lock);
 }
 
-#ifdef __native_client__
-extern
-#else
-static
-#endif //__native_client__
-void *
+static void *
 taskq_thread(void *arg)
 {
 	taskq_t *tq = arg;
@@ -203,11 +197,10 @@ taskq_create(const char *name, int nthreads, pri_t pri,
 			task_free(tq, task_alloc(tq, KM_SLEEP));
 		mutex_exit(&tq->tq_lock);
 	}
-#ifndef __native_client__
-	for (t = 0; t < nthreads; t++){
-	    pthread_create(&tq->tq_threadlist[t], NULL, taskq_thread, tq);
-	}
-#endif
+
+	for (t = 0; t < nthreads; t++)
+		pthread_create(&tq->tq_threadlist[t], NULL, taskq_thread, tq);
+
 	return (tq);
 }
 
@@ -233,12 +226,11 @@ taskq_destroy(taskq_t *tq)
 		task_free(tq, task_alloc(tq, KM_SLEEP));
 	}
 
-#ifdef ZVM_ENABLE
 	mutex_exit(&tq->tq_lock);
 
 	for (t = 0; t < nthreads; t++)
 		(void) pthread_join(tq->tq_threadlist[t], NULL);
-#endif //ZVM_ENABLE
+
 	kmem_free(tq->tq_threadlist, nthreads * sizeof (pthread_t));
 
 	rw_destroy(&tq->tq_threadlock);

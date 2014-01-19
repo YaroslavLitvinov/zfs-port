@@ -39,8 +39,8 @@
 
 static inline int zfsfuse_fstat64(int fd, struct stat64 *buf)
 {
-    if(fstat64(fd, buf) == -1)
-	return -1;
+	if(fstat64(fd, buf) == -1)
+		return -1;
 
     if(S_ISBLK(buf->st_mode)) {
 	/* LINUX */

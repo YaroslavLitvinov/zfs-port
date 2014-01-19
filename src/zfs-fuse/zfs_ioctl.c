@@ -2786,9 +2786,9 @@ static int
 zfs_init_sharefs()
 {
 	int error;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&zfs_share_lock));
-#endif
+
 /* ZFS-FUSE: not supported */
 #if 0
 	/* Both NFS and SMB shares also require sharetab support. */
@@ -3158,10 +3158,10 @@ zfs_ioctl_init(void)
 		return (error);
 	}
 #endif
-#ifndef __native_client__
+
 	tsd_create(&zfs_fsyncer_key, NULL);
 	tsd_create(&rrw_tsd_key, NULL);
-#endif //__native_client__
+
 #if 0
 	error = ldi_ident_from_mod(&modlinkage, &zfs_li);
 	ASSERT(error == 0);
@@ -3199,9 +3199,8 @@ zfs_ioctl_fini(void)
 	if (zfs_nfsshare_inited || zfs_smbshare_inited)
 		(void) ddi_modclose(sharefs_mod);
 #endif
-#ifndef __native_client__
+
 	tsd_destroy(&zfs_fsyncer_key);
-#endif //__native_client__
 #if 0
 	ldi_ident_release(zfs_li);
 #endif

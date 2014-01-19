@@ -187,9 +187,7 @@ mze_insert(zap_t *zap, int chunkid, uint64_t hash, mzap_ent_phys_t *mzep)
 	mzap_ent_t *mze;
 
 	ASSERT(zap->zap_ismicro);
-#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&zap->zap_rwlock));
-#endif
 	ASSERT(mzep->mze_cd < ZAP_MAXCD);
 
 	mze = kmem_alloc(sizeof (mzap_ent_t), KM_SLEEP);
@@ -208,9 +206,7 @@ mze_find(zap_name_t *zn)
 	avl_tree_t *avl = &zn->zn_zap->zap_m.zap_avl;
 
 	ASSERT(zn->zn_zap->zap_ismicro);
-#ifndef __native_client__
 	ASSERT(RW_LOCK_HELD(&zn->zn_zap->zap_rwlock));
-#endif
 
 	if (strlen(zn->zn_name_norm) >= sizeof (mze_tofind.mze_phys.mze_name))
 		return (NULL);
@@ -243,9 +239,8 @@ mze_find_unused_cd(zap_t *zap, uint64_t hash)
 	uint32_t cd;
 
 	ASSERT(zap->zap_ismicro);
-#ifndef __native_client__
 	ASSERT(RW_LOCK_HELD(&zap->zap_rwlock));
-#endif
+
 	mze_tofind.mze_hash = hash;
 	mze_tofind.mze_phys.mze_cd = 0;
 
@@ -264,9 +259,8 @@ static void
 mze_remove(zap_t *zap, mzap_ent_t *mze)
 {
 	ASSERT(zap->zap_ismicro);
-#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&zap->zap_rwlock));
-#endif
+
 	avl_remove(&zap->zap_m.zap_avl, mze);
 	kmem_free(mze, sizeof (mzap_ent_t));
 }
@@ -454,9 +448,9 @@ mzap_upgrade(zap_t **zapp, dmu_tx_t *tx)
 	mzap_phys_t *mzp;
 	int i, sz, nchunks, err;
 	zap_t *zap = *zapp;
-#ifndef __native_client__
+
 	ASSERT(RW_WRITE_HELD(&zap->zap_rwlock));
-#endif
+
 	sz = zap->zap_dbuf->db_size;
 	mzp = kmem_alloc(sz, KM_SLEEP);
 	bcopy(zap->zap_dbuf->db_data, mzp, sz);
@@ -751,9 +745,8 @@ mzap_addent(zap_name_t *zn, uint64_t value)
 
 	dprintf("obj=%llu %s=%llu\n", zap->zap_object,
 	    zn->zn_name_orij, value);
-#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&zap->zap_rwlock));
-#endif
+
 #ifdef ZFS_DEBUG
 	for (i = 0; i < zap->zap_m.zap_num_chunks; i++) {
 		mzap_ent_phys_t *mze = &zap->zap_m.zap_phys->mz_chunk[i];

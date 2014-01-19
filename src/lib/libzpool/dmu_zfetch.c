@@ -451,9 +451,9 @@ dmu_zfetch_rele(zfetch_t *zf)
 {
 	zstream_t	*zs;
 	zstream_t	*zs_next;
-#ifndef __native_client__
+
 	ASSERT(!RW_LOCK_HELD(&zf->zf_rwlock));
-#endif
+
 	for (zs = list_head(&zf->zf_stream); zs; zs = zs_next) {
 		zs_next = list_next(&zf->zf_stream, zs);
 
@@ -480,9 +480,9 @@ dmu_zfetch_stream_insert(zfetch_t *zf, zstream_t *zs)
 {
 	zstream_t	*zs_walk;
 	zstream_t	*zs_next;
-#ifndef __native_client__
+
 	ASSERT(RW_WRITE_HELD(&zf->zf_rwlock));
-#endif
+
 	for (zs_walk = list_head(&zf->zf_stream); zs_walk; zs_walk = zs_next) {
 		zs_next = list_next(&zf->zf_stream, zs_walk);
 
@@ -536,9 +536,8 @@ dmu_zfetch_stream_reclaim(zfetch_t *zf)
 static void
 dmu_zfetch_stream_remove(zfetch_t *zf, zstream_t *zs)
 {
-#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&zf->zf_rwlock));
-#endif
+
 	list_remove(&zf->zf_stream, zs);
 	zf->zf_stream_cnt--;
 }

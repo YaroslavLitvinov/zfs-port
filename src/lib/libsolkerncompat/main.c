@@ -24,8 +24,6 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
-
 #include <sys/types.h>
 #include <sys/debug.h>
 #include <sys/policy.h>
@@ -50,13 +48,7 @@ void libsolkerncompat_init()
 {
 	/* LINUX */
 	ncpus = sysconf(_SC_NPROCESSORS_CONF);
-#ifdef __native_client__
-	/*temp fix while migrating to new memory manager*/
-#define MMAP_PSEUDO_HEAP_SIZE     0xE0000000
-	physmem = MMAP_PSEUDO_HEAP_SIZE / sysconf(_SC_PAGESIZE);
-#else
 	physmem = sysconf(_SC_PHYS_PAGES);
-#endif
 	_pagesize = sysconf(_SC_PAGESIZE);
 	_pageshift = ffs(_pagesize) - 1;
 	pwd_buflen = sysconf(_SC_GETPW_R_SIZE_MAX);
@@ -88,5 +80,3 @@ void libsolkerncompat_exit()
 
 	vfs_exit();
 }
-
-#endif //ZVM_COW

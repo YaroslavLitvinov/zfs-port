@@ -76,10 +76,6 @@ extern int	taskq_suspended(taskq_t *);
 extern void	taskq_resume(taskq_t *);
 extern int	taskq_member(taskq_t *, kthread_t *);
 
-#ifdef __native_client__
-    extern void run_pending_zvm_tasks();
-#endif
-
 #endif	/* _KERNEL */
 
 #ifdef	__cplusplus

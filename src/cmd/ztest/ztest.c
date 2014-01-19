@@ -74,6 +74,7 @@
  * from plain old race conditions.
  */
 
+#include <pth/pthread.h>
 #include <sys/zfs_context.h>
 #include <sys/spa.h>
 #include <sys/dmu.h>

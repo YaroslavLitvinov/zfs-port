@@ -36,29 +36,6 @@ static inline long fake_gethostid()
 	return id >= 0 ? id : -id;
 }
 
-static ssize_t 
-compat_pread(int fd, void *buf, size_t count, off_t offset){
-    int ret;
-    if ( (ret=lseek64(fd, offset, SEEK_SET)) != offset )
-	return -1;
-    ret=read(fd, buf, count);
-    return ret;
-}
-
-static ssize_t 
-compat_pwrite(int fd, const void *buf, size_t count, off_t offset){
-    int ret;
-    if ( (ret=lseek64(fd, offset, SEEK_SET)) != offset )
-	return ret;
-    ret = write(fd, buf, count);
-    return ret;
-}
-
-
 #define gethostid() fake_gethostid()
-#define pread64  compat_pread
-#define pwrite64 compat_pwrite
-#define pread    compat_pread
-#define pwrite   compat_pwrite
 
 #endif

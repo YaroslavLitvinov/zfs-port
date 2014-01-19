@@ -35,8 +35,6 @@
  * Interface stability: Committed.
  */
 
-#ifdef ZVM_COW
-
 #include <sys/types.h>
 #ifdef	_KERNEL
 #include <sys/param.h>
@@ -2133,6 +2131,3 @@ u8_textprep_str(char *inarray, size_t *inlen, char *outarray, size_t *outlen,
 
 	return (ret_val);
 }
-
-
-#endif //ZVM_COW

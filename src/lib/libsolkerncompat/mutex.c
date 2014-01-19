@@ -24,48 +24,49 @@
  * Use is subject to license terms.
  */
 
+#include <errno.h>
+#ifndef __native_client__
+#include <pthread.h>
+#else
+#include <pth/pthread.h>
+#endif //__native_client__
+
 #include <sys/debug.h>
 #include <sys/mutex.h>
 #include <sys/thread.h>
 #include <sys/types.h>
 
-#include <errno.h>
-#include <pthread.h>
 
 void
 zmutex_init(kmutex_t *mp)
 {
-#ifdef __native_client__
 	mp->m_owner = NULL;
-#else
-	VERIFY(pthread_mutex_init(&mp->m_lock, NULL) == 0);
+#ifdef DEBUG
 	pthread_mutexattr_t attr;
 	VERIFY(pthread_mutexattr_init(&attr) == 0);
 	VERIFY(pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK) == 0);
 	VERIFY(pthread_mutex_init(&mp->m_lock, &attr) == 0);
 	VERIFY(pthread_mutexattr_destroy(&attr) == 0);
+#else
+	VERIFY(pthread_mutex_init(&mp->m_lock, NULL) == 0);
 #endif
 }
 
 void
 zmutex_destroy(kmutex_t *mp)
 {
-#ifndef __native_client__
 	ASSERT(mp->m_owner == NULL);
 	VERIFY(pthread_mutex_destroy(&mp->m_lock) == 0);
 	mp->m_owner = (void *)-1UL;
-#endif //__native_client__
 }
 
 void
 mutex_enter(kmutex_t *mp)
 {
-#ifndef __native_client__
 	ASSERT(mp->m_owner != (void *)-1UL);
 	ASSERT(mp->m_owner != curthread);
 	VERIFY(pthread_mutex_lock(&mp->m_lock) == 0);
 	ASSERT(mp->m_owner == NULL);
-#endif //__native_client__
 	mp->m_owner = curthread;
 }
 
@@ -73,11 +74,7 @@ int
 mutex_tryenter(kmutex_t *mp)
 {
 	ASSERT(mp->m_owner != (void *)-1UL);
-#ifdef __native_client__
-	int ret = 0;
-#else
 	int ret = pthread_mutex_trylock(&mp->m_lock);
-#endif //__native_client__
 
 	if (ret == 0) {
 		ASSERT(mp->m_owner == NULL);
@@ -94,14 +91,11 @@ mutex_exit(kmutex_t *mp)
 {
 	ASSERT(mutex_owner(mp) == curthread);
 	mp->m_owner = NULL;
-#ifndef __native_client__
 	VERIFY(pthread_mutex_unlock(&mp->m_lock) == 0);
-#endif
 }
 
 void *
 mutex_owner(kmutex_t *mp)
 {
-    return (mp->m_owner);
+	return (mp->m_owner);
 }
-

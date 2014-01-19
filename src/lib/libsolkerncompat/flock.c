@@ -23,8 +23,6 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
-
 #include <sys/types.h>
 #include <sys/vnode.h>
 #include <sys/flock.h>
@@ -82,6 +80,3 @@ convoff(vp, lckdat, whence, offset)
 	lckdat->l_whence = (short)whence;
 	return (0);
 }
-
-
-#endif //ZVM_COW

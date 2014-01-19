@@ -225,19 +225,17 @@ spa_config_enter(spa_t *spa, krw_t rw, void *tag)
 	spa_config_lock_t *scl = &spa->spa_config_lock;
 
 	mutex_enter(&scl->scl_lock);
+
 	if (rw == RW_READER) {
-#ifndef __native_client__
 		while (scl->scl_writer != NULL && scl->scl_writer != curthread)
 			cv_wait(&scl->scl_cv, &scl->scl_lock);
-#endif
 	} else {
-#ifndef __native_client__
 		while (!refcount_is_zero(&scl->scl_count) &&
 		    scl->scl_writer != curthread)
 			cv_wait(&scl->scl_cv, &scl->scl_lock);
-#endif
 		scl->scl_writer = curthread;
 	}
+
 	(void) refcount_add(&scl->scl_count, tag);
 
 	mutex_exit(&scl->scl_lock);
@@ -246,7 +244,6 @@ spa_config_enter(spa_t *spa, krw_t rw, void *tag)
 void
 spa_config_exit(spa_t *spa, void *tag)
 {
-    //#ifndef __native_client__
 	spa_config_lock_t *scl = &spa->spa_config_lock;
 
 	mutex_enter(&scl->scl_lock);
@@ -255,24 +252,22 @@ spa_config_exit(spa_t *spa, void *tag)
 
 	if (refcount_remove(&scl->scl_count, tag) == 0) {
 		cv_broadcast(&scl->scl_cv);
-#ifndef __native_client__
 		ASSERT(scl->scl_writer == NULL || scl->scl_writer == curthread);
-#endif
 		scl->scl_writer = NULL;  /* OK in either case */
 	}
 
 	mutex_exit(&scl->scl_lock);
-	//#endif
 }
 
 boolean_t
 spa_config_held(spa_t *spa, krw_t rw)
 {
-    spa_config_lock_t *scl = &spa->spa_config_lock;
-    if (rw == RW_READER)
-	return (!refcount_is_zero(&scl->scl_count));
-    else
-	return (scl->scl_writer == curthread);
+	spa_config_lock_t *scl = &spa->spa_config_lock;
+
+	if (rw == RW_READER)
+		return (!refcount_is_zero(&scl->scl_count));
+	else
+		return (scl->scl_writer == curthread);
 }
 
 /*
@@ -388,7 +383,6 @@ spa_remove(spa_t *spa)
 	spa_config_dirent_t *dp;
 
 	ASSERT(MUTEX_HELD(&spa_namespace_lock));
-
 	ASSERT(spa->spa_state == POOL_STATE_UNINITIALIZED);
 
 	avl_remove(&spa_namespace_avl, spa);
@@ -443,7 +437,6 @@ spa_remove(spa_t *spa)
 spa_t *
 spa_next(spa_t *prev)
 {
-
 	ASSERT(MUTEX_HELD(&spa_namespace_lock));
 
 	if (prev)
@@ -465,10 +458,8 @@ spa_next(spa_t *prev)
 void
 spa_open_ref(spa_t *spa, void *tag)
 {
-
 	ASSERT(refcount_count(&spa->spa_refcount) >= spa->spa_minref ||
 	    MUTEX_HELD(&spa_namespace_lock));
-
 	(void) refcount_add(&spa->spa_refcount, tag);
 }
 
@@ -479,10 +470,8 @@ spa_open_ref(spa_t *spa, void *tag)
 void
 spa_close(spa_t *spa, void *tag)
 {
-
 	ASSERT(refcount_count(&spa->spa_refcount) > spa->spa_minref ||
 	    MUTEX_HELD(&spa_namespace_lock));
-
 	(void) refcount_remove(&spa->spa_refcount, tag);
 }
 
@@ -494,7 +483,6 @@ spa_close(spa_t *spa, void *tag)
 boolean_t
 spa_refcount_zero(spa_t *spa)
 {
-
 	ASSERT(MUTEX_HELD(&spa_namespace_lock));
 
 	return (refcount_count(&spa->spa_refcount) == spa->spa_minref);
@@ -1243,7 +1231,6 @@ spa_init(int mode)
 	mutex_init(&spa_namespace_lock, NULL, MUTEX_DEFAULT, NULL);
 	mutex_init(&spa_spare_lock, NULL, MUTEX_DEFAULT, NULL);
 	mutex_init(&spa_l2cache_lock, NULL, MUTEX_DEFAULT, NULL);
-
 	cv_init(&spa_namespace_cv, NULL, CV_DEFAULT, NULL);
 
 	avl_create(&spa_namespace_avl, spa_name_compare, sizeof (spa_t),
@@ -1261,9 +1248,7 @@ spa_init(int mode)
 	unique_init();
 	zio_init();
 	dmu_init();
-#ifndef DISABLE_ZIL
 	zil_init();
-#endif //DISABLE_ZIL
 	vdev_cache_stat_init();
 	zfs_prop_init();
 	zpool_prop_init();
@@ -1276,9 +1261,7 @@ spa_fini(void)
 	spa_evict_all();
 
 	vdev_cache_stat_fini();
-#ifndef DISABLE_ZIL
 	zil_fini();
-#endif
 	dmu_fini();
 	zio_fini();
 	unique_fini();
@@ -1289,7 +1272,6 @@ spa_fini(void)
 	avl_destroy(&spa_l2cache_avl);
 
 	cv_destroy(&spa_namespace_cv);
-
 	mutex_destroy(&spa_namespace_lock);
 	mutex_destroy(&spa_spare_lock);
 	mutex_destroy(&spa_l2cache_lock);

@@ -69,9 +69,9 @@ typedef int umem_nofail_callback_t(void);
 #define	UMEM_CALLBACK_RETRY		0
 #define	UMEM_CALLBACK_EXIT(status)	(0x100 | ((status) & 0xFF))
 
-#ifdef ZVM_COW
+#ifdef __native_client__
 extern void umem_startup();
-#endif //ZVM_COW
+#endif //__native_client__
 
 extern void umem_nofail_callback(umem_nofail_callback_t *);
 

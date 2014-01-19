@@ -339,9 +339,9 @@ struct umem_cache {
 	umem_magtype_t	*cache_magtype;		/* magazine type */
 	umem_maglist_t	cache_full;		/* full magazines */
 	umem_maglist_t	cache_empty;		/* empty magazines */
-#ifdef DEBUG
-    char padding[168];
-#endif
+    //#ifdef DEBUG
+    //    char padding[168];
+    //#endif
 	/*
 	 * Per-CPU layer
 	 */
@@ -416,11 +416,11 @@ typedef struct umem_cpu {
 
 #ifdef UMEM_STANDALONE
 
-#ifdef ZVM_COW
+#ifdef __native_client__
 extern void umem_startup();
 #else
 extern void umem_startup(caddr_t, size_t, size_t, caddr_t, caddr_t);
-#endif
+#endif //__native_client__
 
 extern int umem_add(caddr_t, size_t);
 #endif

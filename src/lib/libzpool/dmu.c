@@ -1186,24 +1186,15 @@ dmu_init(void)
 {
 	dbuf_init();
 	dnode_init();
-
-	//#ifdef ZVM_COWCACHE
 	arc_init();
 	l2arc_init();
-	//#endif //ZVM_COWCACHE
 }
 
 void
 dmu_fini(void)
 {
-    //#ifdef ZVM_COWCACHE
 	arc_fini();
-	//#endif //ZVM_COWCACHE
-
 	dnode_fini();
 	dbuf_fini();
-
-	//#ifdef ZVM_COWCACHE
 	l2arc_fini();
-	//#endif //ZVM_COWCACHE
 }

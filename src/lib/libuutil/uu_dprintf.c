@@ -46,7 +46,7 @@ strseverity(uu_dprintf_severity_t severity)
 {
 	switch (severity) {
 	case UU_DPRINTF_SILENT:
-	    return (dgettext(TEXT_DOMAIN, "silent"));
+		return (dgettext(TEXT_DOMAIN, "silent"));
 	case UU_DPRINTF_FATAL:
 		return (dgettext(TEXT_DOMAIN, "FATAL"));
 	case UU_DPRINTF_WARNING:

@@ -27,8 +27,6 @@
  * Portions Copyright 2006 OmniTI, Inc.
  */
 
-#ifdef ZVM_COW
-
 /* #pragma ident	"@(#)umem_fork.c	1.3	05/06/08 SMI" */
 
 #include "config.h"
@@ -46,7 +44,6 @@
 static void
 umem_lockup_cache(umem_cache_t *cp)
 {
-#ifdef ZVM_ENABLE
 	int idx;
 	int ncpus = cp->cache_cpu_mask + 1;
 
@@ -55,13 +52,11 @@ umem_lockup_cache(umem_cache_t *cp)
 
 	(void) mutex_lock(&cp->cache_depot_lock);
 	(void) mutex_lock(&cp->cache_lock);
-#endif //ZVM_ENABLE
 }
 
 static void
 umem_release_cache(umem_cache_t *cp)
 {
-#ifdef ZVM_ENABLE
 	int idx;
 	int ncpus = cp->cache_cpu_mask + 1;
 
@@ -70,13 +65,11 @@ umem_release_cache(umem_cache_t *cp)
 
 	for (idx = 0; idx < ncpus; idx++)
 		(void) mutex_unlock(&cp->cache_cpu[idx].cc_lock);
-#endif //ZVM_ENABLE
 }
 
 static void
 umem_lockup_log_header(umem_log_header_t *lhp)
 {
-#ifdef ZVM_ENABLE
 	int idx;
 	if (lhp == NULL)
 		return;
@@ -84,13 +77,11 @@ umem_lockup_log_header(umem_log_header_t *lhp)
 		(void) mutex_lock(&lhp->lh_cpu[idx].clh_lock);
 
 	(void) mutex_lock(&lhp->lh_lock);
-#endif //ZVM_COW
 }
 
 static void
 umem_release_log_header(umem_log_header_t *lhp)
 {
-#ifdef ZVM_ENABLE
 	int idx;
 	if (lhp == NULL)
 		return;
@@ -99,13 +90,11 @@ umem_release_log_header(umem_log_header_t *lhp)
 
 	for (idx = 0; idx < umem_max_ncpus; idx++)
 		(void) mutex_unlock(&lhp->lh_cpu[idx].clh_lock);
-#endif //ZVM_ENABLE
 }
 
 static void
 umem_lockup(void)
 {
-#ifdef ZVM_ENABLE
 	umem_cache_t *cp;
 
 	(void) mutex_lock(&umem_init_lock);
@@ -137,13 +126,11 @@ umem_lockup(void)
 
 	vmem_sbrk_lockup();
 	vmem_lockup();
-#endif //ZVM_ENABLE
 }
 
 static void
 umem_release(void)
 {
-#ifdef ZVM_ENABLE
 	umem_cache_t *cp;
 
 	vmem_release();
@@ -163,13 +150,11 @@ umem_release(void)
 	(void) mutex_unlock(&umem_update_lock);
 	(void) mutex_unlock(&umem_cache_lock);
 	(void) mutex_unlock(&umem_init_lock);
-#endif //ZVM_ENABLE
 }
 
 static void
 umem_release_child(void)
 {
-#ifdef ZVM_ENABLE
 	umem_cache_t *cp;
 
 	/*
@@ -212,14 +197,12 @@ umem_release_child(void)
 	}
 
 	umem_release();
-#endif //ZVM_ENABLE
 }
 #endif
 
 void
 umem_forkhandler_init(void)
 {
-#ifdef ZVM_ENABLE
 #ifndef _WIN32
 	/*
 	 * There is no way to unregister these atfork functions,
@@ -228,7 +211,4 @@ umem_forkhandler_init(void)
 	 */
 	(void) pthread_atfork(umem_lockup, umem_release, umem_release_child);
 #endif
-#endif //ZVM_ENABLE
 }
-
-#endif //ZVM_COW

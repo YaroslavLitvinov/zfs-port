@@ -30,7 +30,9 @@
 
 
 #include <libuutil.h>
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 
 #include <sys/avl_impl.h>
 #include <sys/byteorder.h>

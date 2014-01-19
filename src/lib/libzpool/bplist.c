@@ -29,9 +29,7 @@
 static int
 bplist_hold(bplist_t *bpl)
 {
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&bpl->bpl_lock));
-#endif
 	if (bpl->bpl_dbuf == NULL) {
 		int err = dmu_bonus_hold(bpl->bpl_mos,
 		    bpl->bpl_object, bpl, &bpl->bpl_dbuf);

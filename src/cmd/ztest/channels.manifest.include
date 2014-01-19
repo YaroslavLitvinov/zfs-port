@@ -7,8 +7,8 @@ Channel = {ABS_PATH}{NAME}.zrtdebug.log, /dev/debug, 0, 0, 0, 0, 50999999, 50999
 ==Channel = /dev/stdout, /dev/stdout, 0, 0, 0, 0, 999999, 999999
 
 Channel = /dev/null, /dev/stdin, 0, 0, 999999, 999999, 0, 0
-Channel = {ABS_PATH}{NAME}.stdout.log, /dev/stdout, 0, 0, 0, 0, 999999, 999999
-Channel = {ABS_PATH}{NAME}.stderr.log, /dev/stderr, 0, 0, 0, 0, 999999, 999999
+Channel = {ABS_PATH}{NAME}.stdout.log, /dev/stdout, 0, 0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}{NAME}.stderr.log, /dev/stderr, 0, 0, 0, 0, 99999999, 99999999
 Channel = {ABS_PATH}{NAME}.nvram, /dev/nvram, 0, 0, 99999999, 9999999, 0, 0
 Channel = {ABS_PATH}{NAME}.zfs.log, /dev/zfslog, 0, 0, 0, 0, 999999, 999999
 Channel = {ABS_PATH}{NAME}.nexe, /dev/urandom, 0, 0, 999999999, 99999999, 0, 0

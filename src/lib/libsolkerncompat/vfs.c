@@ -25,8 +25,6 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
-
 #include <sys/debug.h>
 #include <sys/vfs.h>
 #include <sys/vfs_opreg.h>
@@ -38,7 +36,9 @@
 #include <fs/fs_subr.h>
 #include <string.h>
 #include <errno.h>
+#ifndef __native_client__
 #include <pthread.h>
+#endif //__native_client__
 #include <unistd.h>
 
 struct vfs st_rootvfs = {};
@@ -70,9 +70,8 @@ extern const fs_operation_def_t fd_fvnodeops_template[];
 
 void vfs_init()
 {
-#ifdef ZVM_ENABLE
 	VERIFY(pthread_rwlock_init(&vfslist, NULL) == 0);
-#endif
+
 	rootvfs->vfs_next = rootvfs;
 	rootvfs->vfs_prev = rootvfs;
 
@@ -91,30 +90,22 @@ void vfs_init()
 
 void vfs_list_lock()
 {
-#ifdef ZVM_ENABLE
 	VERIFY(pthread_rwlock_wrlock(&vfslist) == 0);
-#endif
 }
 
 void vfs_list_read_lock()
 {
-#ifdef ZVM_ENABLE
 	VERIFY(pthread_rwlock_rdlock(&vfslist) == 0);
-#endif
 }
 
 void vfs_list_unlock()
 {
-#ifdef ZVM_ENABLE
 	VERIFY(pthread_rwlock_unlock(&vfslist) == 0);
-#endif
 }
 
 void vfs_exit()
 {
-#ifdef ZVM_ENABLE
 	VERIFY(pthread_rwlock_destroy(&vfslist) == 0);
-#endif
 }
 
 /*
@@ -370,5 +361,3 @@ int vfs_freevfsops_by_type(int t)
 	cmn_err(CE_WARN, "vfs.c: vfs_freevfsops_by_type unimplemented");
 	return 0;
 }
-
-#endif //ZVM_COW

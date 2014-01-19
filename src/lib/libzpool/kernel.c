@@ -68,17 +68,12 @@ struct utsname utsname = {
 kthread_t *
 zk_thread_create(void (*func)(void*), void *arg)
 {
-#ifdef __native_client__
-    func(arg);
-    return NULL;
-#else
 	thread_t tid;
 
 	VERIFY(thr_create(0, 0, (void *(*)(void *))func, arg, THR_DETACHED,
 	    &tid) == 0);
 
 	return ((void *)(uintptr_t)tid);
-#endif //ZVM_ENABLE
 }
 
 /*
@@ -112,18 +107,16 @@ kstat_delete(kstat_t *ksp)
 void
 zmutex_init(kmutex_t *mp)
 {
-    mp->m_owner = NULL;
-    mp->initialized = B_TRUE;
-    (void) _mutex_init(&mp->m_lock, USYNC_THREAD, NULL);
+	mp->m_owner = NULL;
+	mp->initialized = B_TRUE;
+	(void) _mutex_init(&mp->m_lock, USYNC_THREAD, NULL);
 }
 
 void
 zmutex_destroy(kmutex_t *mp)
 {
-#ifndef __native_client__
 	ASSERT(mp->initialized == B_TRUE);
 	ASSERT(mp->m_owner == NULL);
-#endif
 	(void) _mutex_destroy(&(mp)->m_lock);
 	mp->m_owner = (void *)-1UL;
 	mp->initialized = B_FALSE;
@@ -132,22 +125,18 @@ zmutex_destroy(kmutex_t *mp)
 void
 mutex_enter(kmutex_t *mp)
 {
-#ifndef __native_client__
 	ASSERT(mp->initialized == B_TRUE);
 	ASSERT(mp->m_owner != (void *)-1UL);
 	ASSERT(mp->m_owner != curthread);
 	VERIFY(mutex_lock(&mp->m_lock) == 0);
 	ASSERT(mp->m_owner == NULL);
-#endif
 	mp->m_owner = curthread;
 }
 
 int
 mutex_tryenter(kmutex_t *mp)
 {
-#ifndef __native_client__
 	ASSERT(mp->initialized == B_TRUE);
-#endif
 	ASSERT(mp->m_owner != (void *)-1UL);
 	if (0 == mutex_trylock(&mp->m_lock)) {
 		ASSERT(mp->m_owner == NULL);
@@ -161,10 +150,8 @@ mutex_tryenter(kmutex_t *mp)
 void
 mutex_exit(kmutex_t *mp)
 {
-#ifndef __native_client__
 	ASSERT(mp->initialized == B_TRUE);
 	ASSERT(mutex_owner(mp) == curthread);
-#endif //__native_client__
 	mp->m_owner = NULL;
 	VERIFY(mutex_unlock(&mp->m_lock) == 0);
 }
@@ -172,9 +159,7 @@ mutex_exit(kmutex_t *mp)
 void *
 mutex_owner(kmutex_t *mp)
 {
-#ifndef __native_client__
 	ASSERT(mp->initialized == B_TRUE);
-#endif
 	return (mp->m_owner);
 }
 
@@ -187,13 +172,11 @@ mutex_owner(kmutex_t *mp)
 void
 rw_init(krwlock_t *rwlp, char *name, int type, void *arg)
 {
-    //#ifdef ZVM_ENABLE
 	rwlock_init(&rwlp->rw_lock, USYNC_THREAD, NULL);
 	zmutex_init(&rwlp->mutex);
 	rwlp->rw_owner = NULL;
 	rwlp->initialized = B_TRUE;
 	rwlp->thr_count = 0;
-	//#endif
 }
 
 void
@@ -210,32 +193,23 @@ void
 rw_enter(krwlock_t *rwlp, krw_t rw)
 {
 	//ASSERT(!RW_LOCK_HELD(rwlp));
-#ifndef __native_client__
 	ASSERT(rwlp->initialized == B_TRUE);
-#endif
 	ASSERT(rwlp->rw_owner != (void *)-1UL);
-#ifndef __native_client__
 	ASSERT(rwlp->rw_owner != curthread);
-#endif 
 
 	if (rw == RW_READER) {
 		VERIFY(rw_rdlock(&rwlp->rw_lock) == 0);
 
 		mutex_enter(&rwlp->mutex);
-#ifndef __native_client__
 		ASSERT(rwlp->thr_count >= 0);
-#endif
 		rwlp->thr_count++;
 		mutex_exit(&rwlp->mutex);
-#ifndef __native_client__
 		ASSERT(rwlp->rw_owner == NULL);
-#endif
 	} else {
 		VERIFY(rw_wrlock(&rwlp->rw_lock) == 0);
-#ifndef __native_client__
+
 		ASSERT(rwlp->rw_owner == NULL);
 		ASSERT(rwlp->thr_count == 0);
-#endif
 		rwlp->thr_count = -1;
 		rwlp->rw_owner = curthread;
 	}
@@ -244,12 +218,10 @@ rw_enter(krwlock_t *rwlp, krw_t rw)
 void
 rw_exit(krwlock_t *rwlp)
 {
-#ifndef __native_client__
 	ASSERT(rwlp->initialized == B_TRUE);
 	ASSERT(rwlp->rw_owner != (void *)-1UL);
-#endif
 
-	if( rwlp->rw_owner == curthread) {
+	if(rwlp->rw_owner == curthread) {
 		/* Write locked */
 		ASSERT(rwlp->thr_count == -1);
 		rwlp->thr_count = 0;
@@ -269,13 +241,11 @@ int
 rw_tryenter(krwlock_t *rwlp, krw_t rw)
 {
 	int rv;
-#ifndef __native_client__
+
 	ASSERT(rwlp->initialized == B_TRUE);
-#endif
 	ASSERT(rwlp->rw_owner != (void *)-1UL);
-#ifndef __native_client__
 	ASSERT(rwlp->rw_owner != curthread);
-#endif
+
 	if (rw == RW_READER)
 		rv = rw_tryrdlock(&rwlp->rw_lock);
 	else
@@ -284,17 +254,13 @@ rw_tryenter(krwlock_t *rwlp, krw_t rw)
 	if (rv == 0) {
 		if(rw == RW_READER) {
 			mutex_enter(&rwlp->mutex);
-#ifndef __native_client__
 			ASSERT(rwlp->thr_count >= 0);
-#endif
 			rwlp->thr_count++;
 			mutex_exit(&rwlp->mutex);
 			ASSERT(rwlp->rw_owner == NULL);
 		} else {
-#ifndef __native_client__
 			ASSERT(rwlp->rw_owner == NULL);
 			ASSERT(rwlp->thr_count == 0);
-#endif
 			rwlp->thr_count = -1;
 			rwlp->rw_owner = curthread;
 		}
@@ -308,12 +274,9 @@ rw_tryenter(krwlock_t *rwlp, krw_t rw)
 int
 rw_tryupgrade(krwlock_t *rwlp)
 {
-    //#ifdef ZVM_ENABLE
-#ifndef __native_client__
 	ASSERT(rwlp->initialized == B_TRUE);
-#endif
 	ASSERT(rwlp->rw_owner != (void *)-1UL);
-	//#endif
+
 	return (0);
 }
 
@@ -335,37 +298,30 @@ int rw_lock_held(krwlock_t *rwlp)
 void
 cv_init(kcondvar_t *cv, char *name, int type, void *arg)
 {
-#ifdef ZVM_ENABLE
 	ASSERT(type == CV_DEFAULT);
 
 	VERIFY(cond_init(cv, type, NULL) == 0);
-#endif
 }
 
 void
 cv_destroy(kcondvar_t *cv)
 {
-#ifdef ZVM_ENABLE
 	VERIFY(cond_destroy(cv) == 0);
-#endif
 }
 
 void
 cv_wait(kcondvar_t *cv, kmutex_t *mp)
 {
-#ifdef ZVM_ENABLE
 	ASSERT(mutex_owner(mp) == curthread);
 	mp->m_owner = NULL;
 	int ret = cond_wait(cv, &mp->m_lock);
 	VERIFY(ret == 0 || ret == EINTR);
 	mp->m_owner = curthread;
-#endif
 }
 
 clock_t
 cv_timedwait(kcondvar_t *cv, kmutex_t *mp, clock_t abstime)
 {
-#ifdef ZVM_ENABLE
 	int error;
 	struct timespec ts;
 	struct timeval tv;
@@ -390,9 +346,7 @@ top:
 
 	ASSERT(mutex_owner(mp) == curthread);
 	mp->m_owner = NULL;
-
 	error = pthread_cond_timedwait(cv, &mp->m_lock, &ts);
-
 	mp->m_owner = curthread;
 
 	if (error == EINTR)
@@ -406,25 +360,18 @@ top:
 	ASSERT(error == 0);
 
 	return (1);
-#else
-	return 0;
-#endif //ZVM_ENABLE
 }
 
 void
 cv_signal(kcondvar_t *cv)
 {
-#ifdef ZVM_ENABLE
 	VERIFY(cond_signal(cv) == 0);
-#endif
 }
 
 void
 cv_broadcast(kcondvar_t *cv)
 {
-#ifdef ZVM_ENABLE
 	VERIFY(cond_broadcast(cv) == 0);
-#endif
 }
 
 /*
@@ -899,13 +846,7 @@ kernel_init(int mode)
 {
 	umem_nofail_callback(umem_out_of_memory);
 
-#ifdef __native_client__
-	/*temp fix while migrating to new memory manager*/
-#define MMAP_PSEUDO_HEAP_SIZE     0xE0000000
-	physmem = MMAP_PSEUDO_HEAP_SIZE / sysconf(_SC_PAGESIZE);
-#else
 	physmem = sysconf(_SC_PHYS_PAGES);
-#endif
 
 	dprintf("physmem = %llu pages (%.2f GB)\n", physmem,
 	    (double)physmem * sysconf(_SC_PAGE_SIZE) / (1ULL << 30));

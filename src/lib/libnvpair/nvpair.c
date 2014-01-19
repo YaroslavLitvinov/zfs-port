@@ -24,7 +24,7 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
+
 
 #include <sys/stropts.h>
 #include <sys/debug.h>
@@ -3244,5 +3244,3 @@ nvs_xdr(nvstream_t *nvs, nvlist_t *nvl, char *buf, size_t *buflen)
 
 	return (err);
 }
-
-#endif //ZVM_COW

@@ -24,7 +24,7 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
+
 
 #include <sys/stropts.h>
 #include <sys/isa_defs.h>
@@ -118,5 +118,3 @@ const nv_alloc_ops_t nv_fixed_ops_def = {
 };
 
 const nv_alloc_ops_t *nv_fixed_ops = &nv_fixed_ops_def;
-
-#endif //ZVM_COW

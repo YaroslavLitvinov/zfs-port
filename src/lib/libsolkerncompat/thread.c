@@ -25,21 +25,22 @@
  * Use is subject to license terms.
  */
 
+#ifndef __native_client__
+#include <pthread.h>
+#else
+#include <pth/pthread.h>
+#endif //__native_client__
+
 #include <sys/thread.h>
 #include <sys/debug.h>
 #include <sys/types.h>
 
-#include <pthread.h>
 
 static kthread_t s_thread;
 
 kthread_t *
-zk_thread_create(void (*func)(void*), void *arg)
+zk_thread_create(void (*func)(), void *arg)
 {
-#ifdef __native_client__
-    func(arg);
-    return &s_thread;
-#else
 	pthread_t tid;
 
 	pthread_attr_t attr;
@@ -52,5 +53,4 @@ zk_thread_create(void (*func)(void*), void *arg)
 	pthread_attr_destroy(&attr);
 
 	return ((void *)(uintptr_t)tid);
-#endif
 }

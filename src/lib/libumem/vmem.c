@@ -291,6 +291,7 @@ static vmem_seg_t *
 vmem_getseg(vmem_t *vmp)
 {
 	vmem_seg_t *vsp;
+
 	ASSERT(vmp->vm_nsegfree > 0);
 
 	vsp = vmp->vm_segfree;
@@ -630,14 +631,10 @@ vmem_populate(vmem_t *vmp, int vmflag)
 		return (1);
 	}
 
-#ifdef __native_client__
-	vmem_nosleep_lock.vmpl_thr = thr_self();
 #ifdef ZVM_MM_DEBUG
 	    printf("vmem_populate::vmem_nosleep_lock.vmpl_thr=thr_self()=%u\n",
 		   vmem_nosleep_lock.vmpl_thr);
 #endif
-#endif
-
 	(void) mutex_unlock(&vmp->vm_lock);
 
 	ASSERT(vmflag & VM_NOSLEEP);	/* we do not allow sleep allocations */
@@ -648,7 +645,7 @@ vmem_populate(vmem_t *vmp, int vmflag)
 	 * libthread is not linked.
 	 */
 	(void) mutex_lock(&lp->vmpl_mutex);
-	ASSERT(lp->vmpl_thr == thr_self());
+	ASSERT(lp->vmpl_thr == 0);
 	lp->vmpl_thr = thr_self();
 #ifdef ZVM_MM_DEBUG
 	printf("vmem_populate::vmpl_thr=%u, thr_self()=%u\n", 
@@ -705,10 +702,6 @@ vmem_populate(vmem_t *vmp, int vmflag)
 	lp->vmpl_thr = 0;
 	(void) mutex_unlock(&lp->vmpl_mutex);
 	(void) mutex_lock(&vmp->vm_lock);
-#ifdef __native_client__
-	lp->vmpl_thr = !thr_self();
-	/* magic1(); */
-#endif
 
 	/*
 	 * Now take our own segments.
@@ -1025,7 +1018,6 @@ vmem_xalloc(vmem_t *vmp, size_t size, size_t align, size_t phase,
 			    VMEM_SEGS_PER_SPAN_CREATE +
 			    VMEM_SEGS_PER_EXACT_ALLOC :
 			    VMEM_SEGS_PER_ALLOC_MAX;
-
 			ASSERT(vmp->vm_nsegfree >= resv);
 			vmp->vm_nsegfree -= resv;	/* reserve our segs */
 #ifdef ZVM_MM_DEBUG
@@ -1278,7 +1270,6 @@ vmem_extend_unlocked(vmem_t *vmp, uintptr_t addr, uintptr_t endaddr)
 
 	vmem_seg_t *end = &vmp->vm_seg0;
 
-	//debug_print_vmem_seg( "vmem_extend_unlocked::end", end, 0 );
 	ASSERT(MUTEX_HELD(&vmp->vm_lock));
 
 	/*
@@ -1772,9 +1763,7 @@ vmem_startup(void)
 	vmem_heap = NULL;
 	vmem_heap_alloc = NULL;
 	vmem_heap_free = NULL;
-#ifdef __native_client__
-	vmem_nosleep_lock.vmpl_thr = !thr_self();
-#endif
+
 	bzero(vmem0, sizeof (vmem0));
 	bzero(vmem_populator, sizeof (vmem_populator));
 	bzero(vmem_seg0, sizeof (vmem_seg0));
@@ -1907,17 +1896,6 @@ vmem_release(void)
 		   vmem_nosleep_lock.vmpl_thr, thr_self());
 #endif
 }
-
-#ifdef __native_client__
-void 
-magic1(void){
-    vmem_nosleep_lock.vmpl_thr = !thr_self();
-#ifdef ZVM_MM_DEBUG
-    printf("magic1::vmem_nosleep_lock.vmpl_thr=%u\n",
-		   vmem_nosleep_lock.vmpl_thr);
-#endif
-}
-#endif //__native_client__
 
 #ifdef DEBUG
 void debug_get_vmem_list( vmem_t **vmp ) { *vmp = vmem_list; }

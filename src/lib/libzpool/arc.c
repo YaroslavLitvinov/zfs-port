@@ -715,9 +715,8 @@ buf_hash_remove(arc_buf_hdr_t *buf)
 {
 	arc_buf_hdr_t *fbuf, **bufp;
 	uint64_t idx = BUF_HASH_INDEX(buf->b_spa, &buf->b_dva, buf->b_birth);
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(BUF_HASH_LOCK(idx)));
-#endif
 	ASSERT(HDR_IN_HASH_TABLE(buf));
 
 	bufp = &buf_hash_table.ht_table[idx];
@@ -935,17 +934,15 @@ arc_buf_freeze(arc_buf_t *buf)
 static void
 add_reference(arc_buf_hdr_t *ab, kmutex_t *hash_lock, void *tag)
 {
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(hash_lock));
-#endif
+
 	if ((refcount_add(&ab->b_refcnt, tag) == 1) &&
 	    (ab->b_state != arc_anon)) {
 		uint64_t delta = ab->b_size * ab->b_datacnt;
 		list_t *list = &ab->b_state->arcs_list[ab->b_type];
 		uint64_t *size = &ab->b_state->arcs_lsize[ab->b_type];
-#ifndef __native_client__
+
 		ASSERT(!MUTEX_HELD(&ab->b_state->arcs_mtx));
-#endif
 		mutex_enter(&ab->b_state->arcs_mtx);
 		ASSERT(list_link_active(&ab->b_arc_node));
 		list_remove(list, ab);
@@ -969,17 +966,15 @@ remove_reference(arc_buf_hdr_t *ab, kmutex_t *hash_lock, void *tag)
 {
 	int cnt;
 	arc_state_t *state = ab->b_state;
-#ifndef __native_client__
+
 	ASSERT(state == arc_anon || MUTEX_HELD(hash_lock));
-#endif
 	ASSERT(!GHOST_STATE(state));
 
 	if (((cnt = refcount_remove(&ab->b_refcnt, tag)) == 0) &&
 	    (state != arc_anon)) {
 		uint64_t *size = &state->arcs_lsize[ab->b_type];
-#ifndef __native_client__
+
 		ASSERT(!MUTEX_HELD(&state->arcs_mtx));
-#endif
 		mutex_enter(&state->arcs_mtx);
 		ASSERT(!list_link_active(&ab->b_arc_node));
 		list_insert_head(&state->arcs_list[ab->b_type], ab);
@@ -1000,9 +995,8 @@ arc_change_state(arc_state_t *new_state, arc_buf_hdr_t *ab, kmutex_t *hash_lock)
 	arc_state_t *old_state = ab->b_state;
 	int64_t refcnt = refcount_count(&ab->b_refcnt);
 	uint64_t from_delta, to_delta;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(hash_lock));
-#endif
 	ASSERT(new_state != old_state);
 	ASSERT(refcnt == 0 || ab->b_datacnt > 0);
 	ASSERT(ab->b_datacnt == 0 || !GHOST_STATE(new_state));
@@ -1015,7 +1009,6 @@ arc_change_state(arc_state_t *new_state, arc_buf_hdr_t *ab, kmutex_t *hash_lock)
 	 */
 	if (refcnt == 0) {
 		if (old_state != arc_anon) {
-		    //#ifndef __native_client__
 			int use_mutex = !MUTEX_HELD(&old_state->arcs_mtx);
 			uint64_t *size = &old_state->arcs_lsize[ab->b_type];
 
@@ -1039,10 +1032,8 @@ arc_change_state(arc_state_t *new_state, arc_buf_hdr_t *ab, kmutex_t *hash_lock)
 
 			if (use_mutex)
 				mutex_exit(&old_state->arcs_mtx);
-			//#endif //__native_client__
 		}
 		if (new_state != arc_anon) {
-		    //#ifndef __native_client__
 			int use_mutex = !MUTEX_HELD(&new_state->arcs_mtx);
 			uint64_t *size = &new_state->arcs_lsize[ab->b_type];
 
@@ -1062,7 +1053,6 @@ arc_change_state(arc_state_t *new_state, arc_buf_hdr_t *ab, kmutex_t *hash_lock)
 
 			if (use_mutex)
 				mutex_exit(&new_state->arcs_mtx);
-			//#endif
 		}
 	}
 
@@ -1299,7 +1289,6 @@ arc_hdr_destroy(arc_buf_hdr_t *hdr)
 	ASSERT(!(hdr->b_flags & ARC_STORED));
 
 	if (hdr->b_l2hdr != NULL) {
-	    //#ifndef __native_client__
 		if (!MUTEX_HELD(&l2arc_buflist_mtx)) {
 			/*
 			 * To prevent arc_free() and l2arc_evict() from
@@ -1320,7 +1309,6 @@ arc_hdr_destroy(arc_buf_hdr_t *hdr)
 		} else {
 			list_remove(hdr->b_l2hdr->b_dev->l2ad_buflist, hdr);
 		}
-		//#endif //__native_client__
 		ARCSTAT_INCR(arcstat_l2_size, -hdr->b_size);
 		kmem_free(hdr->b_l2hdr, sizeof (l2arc_buf_hdr_t));
 		if (hdr->b_state == arc_l2c_only)
@@ -1939,24 +1927,16 @@ arc_reclaim_thread(void)
 			arc_do_user_evicts();
 
 		/* block until needed, or one second, whichever is shorter */
-#ifndef __native_client__
 		CALLB_CPR_SAFE_BEGIN(&cpr);
-#endif
 		(void) cv_timedwait(&arc_reclaim_thr_cv,
 		    &arc_reclaim_thr_lock, (lbolt + hz));
-#ifndef __native_client__
 		CALLB_CPR_SAFE_END(&cpr, &arc_reclaim_thr_lock);
-#endif
 	}
 
 	arc_thread_exit = 0;
 	cv_broadcast(&arc_reclaim_thr_cv);
-	//#ifndef __native_client__
 	CALLB_CPR_EXIT(&cpr);		/* drops arc_reclaim_thr_lock */
-	//#endif
-	//#ifdef ZVM_ENABLE
 	thread_exit();
-	//#endif
 }
 
 /*
@@ -2158,9 +2138,8 @@ out:
 static void
 arc_access(arc_buf_hdr_t *buf, kmutex_t *hash_lock)
 {
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(hash_lock));
-#endif
+
 	if (buf->b_state == arc_anon) {
 		/*
 		 * This buffer is not in the cache, and does not
@@ -2969,10 +2948,8 @@ arc_release(arc_buf_t *buf, void *tag)
 		kmem_free(l2hdr, sizeof (l2arc_buf_hdr_t));
 		ARCSTAT_INCR(arcstat_l2_size, -buf_size);
 	}
-#ifndef __native_client__
 	if (MUTEX_HELD(&l2arc_buflist_mtx))
 		mutex_exit(&l2arc_buflist_mtx);
-#endif
 }
 
 int
@@ -3467,14 +3444,8 @@ arc_init(void)
 		kstat_install(arc_ksp);
 	}
 
-#ifdef __native_client__
-#if 0
-	arc_reclaim_thread();
-#endif
-#else
 	(void) thread_create(NULL, 0, arc_reclaim_thread, NULL, 0, &p0,
 	    TS_RUN, minclsyspri);
-#endif
 
 	arc_dead = FALSE;
 	arc_warm = B_FALSE;
@@ -3491,10 +3462,8 @@ arc_fini(void)
 {
 	mutex_enter(&arc_reclaim_thr_lock);
 	arc_thread_exit = 1;
-#ifdef ZVM_ENABLE
 	while (arc_thread_exit != 0)
 		cv_wait(&arc_reclaim_thr_cv, &arc_reclaim_thr_lock);
-#endif //ZVM_ENABLE
 	mutex_exit(&arc_reclaim_thr_lock);
 
 	arc_flush(NULL);
@@ -3505,7 +3474,6 @@ arc_fini(void)
 		kstat_delete(arc_ksp);
 		arc_ksp = NULL;
 	}
-
 
 	mutex_destroy(&arc_eviction_mtx);
 	mutex_destroy(&arc_reclaim_thr_lock);
@@ -3680,7 +3648,7 @@ static l2arc_dev_t *
 l2arc_dev_get_next(void)
 {
 	l2arc_dev_t *first, *next = NULL;
-	//#ifdef ZVM_ENABLE
+
 	/*
 	 * Lock out the removal of spas (spa_namespace_lock), then removal
 	 * of cache devices (l2arc_dev_mtx).  Once a device has been selected,
@@ -3688,7 +3656,7 @@ l2arc_dev_get_next(void)
 	 */
 	mutex_enter(&spa_namespace_lock);
 	mutex_enter(&l2arc_dev_mtx);
-	//#endif //ZVM_ENABLE
+
 	/* if there are no vdevs, there is nothing to do */
 	if (l2arc_ndev == 0)
 		goto out;
@@ -3720,7 +3688,6 @@ l2arc_dev_get_next(void)
 	l2arc_dev_last = next;
 
 out:
-	//#ifdef ZVM_ENABLE
 	mutex_exit(&l2arc_dev_mtx);
 
 	/*
@@ -3730,7 +3697,7 @@ out:
 	if (next != NULL)
 		spa_config_enter(next->l2ad_spa, RW_READER, next);
 	mutex_exit(&spa_namespace_lock);
-	//#endif //ZVM_ENABLE
+
 	return (next);
 }
 
@@ -3742,9 +3709,8 @@ l2arc_do_free_on_write()
 {
 	list_t *buflist;
 	l2arc_data_free_t *df, *df_prev;
-	//#ifdef ZVM_ENABLE
+
 	mutex_enter(&l2arc_free_on_write_mtx);
-	//#endif //ZVM_ENABLE
 	buflist = l2arc_free_on_write;
 
 	for (df = list_tail(buflist); df; df = df_prev) {
@@ -3755,9 +3721,8 @@ l2arc_do_free_on_write()
 		list_remove(buflist, df);
 		kmem_free(df, sizeof (l2arc_data_free_t));
 	}
-	//#ifdef ZVM_ENABLE
+
 	mutex_exit(&l2arc_free_on_write_mtx);
-	//#endif //ZVM_ENABLE
 }
 
 /*
@@ -3787,9 +3752,9 @@ l2arc_write_done(zio_t *zio)
 
 	if (zio->io_error != 0)
 		ARCSTAT_BUMP(arcstat_l2_writes_error);
-	//#ifdef ZVM_ENABLE
+
 	mutex_enter(&l2arc_buflist_mtx);
-	//#endif
+
 	/*
 	 * All writes completed, or an error was hit.
 	 */
@@ -3822,17 +3787,15 @@ l2arc_write_done(zio_t *zio)
 		 * Allow ARC to begin reads to this L2ARC entry.
 		 */
 		ab->b_flags &= ~ARC_L2_WRITING;
-		//#ifdef ZVM_ENABLE
+
 		mutex_exit(hash_lock);
-		//#endif
 	}
 
 	atomic_inc_64(&l2arc_writes_done);
 	list_remove(buflist, head);
 	kmem_cache_free(hdr_cache, head);
-	//#ifdef ZVM_ENABLE
 	mutex_exit(&l2arc_buflist_mtx);
-	//#endif //ZVM_ENABLE
+
 	l2arc_do_free_on_write();
 
 	kmem_free(cb, sizeof (l2arc_write_callback_t));
@@ -3859,24 +3822,19 @@ l2arc_read_done(zio_t *zio)
 	hdr = buf->b_hdr;
 	ASSERT(hdr != NULL);
 
-	//#ifdef ZVM_ENABLE
 	hash_lock = HDR_LOCK(hdr);
 	mutex_enter(hash_lock);
-	//#endif //ZVM_ENABLE
+
 	/*
 	 * Check this survived the L2ARC journey.
 	 */
 	equal = arc_cksum_equal(buf);
 	if (equal && zio->io_error == 0 && !HDR_L2_EVICTED(hdr)) {
-	    //#ifdef ZVM_ENABLE
 		mutex_exit(hash_lock);
-		//#endif
 		zio->io_private = buf;
 		arc_read_done(zio);
 	} else {
-	    //#ifdef ZVM_ENABLE
 		mutex_exit(hash_lock);
-		//#endif
 		/*
 		 * Buffer didn't survive caching.  Increment stats and
 		 * reissue to the original storage device.
@@ -3943,10 +3901,9 @@ l2arc_list_locked(int list_num, kmutex_t **lock)
 		*lock = &arc_mru->arcs_mtx;
 		break;
 	}
-	//#ifdef ZVM_ENABLE
+
 	ASSERT(!(MUTEX_HELD(*lock)));
 	mutex_enter(*lock);
-	//#endif //ZVM_ENABLE
 	return (list);
 }
 
@@ -3991,12 +3948,10 @@ l2arc_evict(l2arc_dev_t *dev, uint64_t distance, boolean_t all)
 	    uint64_t, taddr, boolean_t, all);
 
 top:
-	//#ifdef ZVM_ENABLE
 	mutex_enter(&l2arc_buflist_mtx);
-	//#endif
 	for (ab = list_tail(buflist); ab; ab = ab_prev) {
 		ab_prev = list_prev(buflist, ab);
-		//#ifdef ZVM_ENABLE
+
 		hash_lock = HDR_LOCK(ab);
 		if (!mutex_tryenter(hash_lock)) {
 			/*
@@ -4008,39 +3963,33 @@ top:
 			mutex_exit(hash_lock);
 			goto top;
 		}
-		//#endif //ZVM_ENABLE
+
 		if (HDR_L2_WRITE_HEAD(ab)) {
 			/*
 			 * We hit a write head node.  Leave it for
 			 * l2arc_write_done().
 			 */
 			list_remove(buflist, ab);
-			//#ifdef ZVM_ENABLE
 			mutex_exit(hash_lock);
-			//#endif//ZVM_ENABLE
 			continue;
 		}
 
 		if (!all && ab->b_l2hdr != NULL &&
 		    (ab->b_l2hdr->b_daddr > taddr ||
 		    ab->b_l2hdr->b_daddr < dev->l2ad_hand)) {
-		    //#ifdef ZVM_ENABLE
 			/*
 			 * We've evicted to the target address,
 			 * or the end of the device.
 			 */
 			mutex_exit(hash_lock);
-			//#endif //ZVM_ENABLE
 			break;
 		}
 
 		if (HDR_FREE_IN_PROGRESS(ab)) {
-		    //#ifdef ZVM_ENABLE
 			/*
 			 * Already on the path to destruction.
 			 */
 			mutex_exit(hash_lock);
-			//#endif //ZVM_ENABLE
 			continue;
 		}
 
@@ -4081,13 +4030,10 @@ top:
 			 */
 			ab->b_flags &= ~ARC_L2_WRITING;
 		}
-		//#ifdef ZVM_ENABLE
 		mutex_exit(hash_lock);
-		//#endif //ZVM_ENABLE
 	}
-	//#ifdef ZVM_ENABLE
 	mutex_exit(&l2arc_buflist_mtx);
-	//#endif //ZVM_ENABLE
+
 	spa_l2cache_space_update(dev->l2ad_vdev, 0, -(taddr - dev->l2ad_evict));
 	dev->l2ad_evict = taddr;
 }
@@ -4122,9 +4068,7 @@ l2arc_write_buffers(spa_t *spa, l2arc_dev_t *dev, uint64_t target_sz)
 	/*
 	 * Copy buffers for L2ARC writing.
 	 */
-	//#ifdef ZVM_ENABLE
 	mutex_enter(&l2arc_buflist_mtx);
-	//#endif //ZVM_ENABLE
 	for (int try = 0; try <= 3; try++) {
 		list = l2arc_list_locked(try, &list_lock);
 		passed_sz = 0;
@@ -4147,7 +4091,6 @@ l2arc_write_buffers(spa_t *spa, l2arc_dev_t *dev, uint64_t target_sz)
 			else
 				ab_prev = list_prev(list, ab);
 
-			//#ifdef ZVM_ENABLE
 			hash_lock = HDR_LOCK(ab);
 			have_lock = MUTEX_HELD(hash_lock);
 			if (!have_lock && !mutex_tryenter(hash_lock)) {
@@ -4156,55 +4099,43 @@ l2arc_write_buffers(spa_t *spa, l2arc_dev_t *dev, uint64_t target_sz)
 				 */
 				continue;
 			}
-			//#endif //ZVM_ENABLE
+
 			passed_sz += ab->b_size;
 			if (passed_sz > headroom) {
-			    //#ifdef ZVM_ENABLE
 				/*
 				 * Searched too far.
 				 */
 				mutex_exit(hash_lock);
-				//#endif
 				break;
 			}
 
 			if (ab->b_spa != spa) {
-			    //#ifdef ZVM_ENABLE
 				mutex_exit(hash_lock);
-				//#endif //ZVM_ENABLE
 				continue;
 			}
 
 			if (ab->b_l2hdr != NULL) {
-			    //#ifdef ZVM_ENABLE
 				/*
 				 * Already in L2ARC.
 				 */
 				mutex_exit(hash_lock);
-				//#endif //ZVM_ENABLE
 				continue;
 			}
 
 			if (HDR_IO_IN_PROGRESS(ab) || !HDR_L2CACHE(ab)) {
-			    //#ifdef ZVM_ENABLE
 				mutex_exit(hash_lock);
-				//#endif //ZVM_ENABLE
 				continue;
 			}
 
 			if ((write_sz + ab->b_size) > target_sz) {
 				full = B_TRUE;
-				//#ifdef ZVM_ENABLE
 				mutex_exit(hash_lock);
-				//#endif //ZVM_ENABLE
 				break;
 			}
 
 			if (ab->b_buf == NULL) {
 				DTRACE_PROBE1(l2arc__buf__null, void *, ab);
-				//#ifdef ZVM_ENABLE
 				mutex_exit(hash_lock);
-				//#endif //ZVM_ENABLE
 				continue;
 			}
 
@@ -4258,15 +4189,14 @@ l2arc_write_buffers(spa_t *spa, l2arc_dev_t *dev, uint64_t target_sz)
 			write_sz += buf_sz;
 			dev->l2ad_hand += buf_sz;
 		}
-		//#ifdef ZVM_ENABLE
+
 		mutex_exit(list_lock);
-		//#endif //ZVM_ENABLE
+
 		if (full == B_TRUE)
 			break;
 	}
-	//#ifdef ZVM_ENABLE
 	mutex_exit(&l2arc_buflist_mtx);
-	//#endif //ZVM_ENABLE
+
 	if (pio == NULL) {
 		ASSERT3U(write_sz, ==, 0);
 		kmem_cache_free(hdr_cache, head);
@@ -4310,14 +4240,10 @@ l2arc_feed_thread(void)
 	mutex_enter(&l2arc_feed_thr_lock);
 
 	while (l2arc_thread_exit == 0) {
-#ifdef __native_client__
-	    l2arc_thread_exit = 1;
-#endif
 		/*
 		 * Pause for l2arc_feed_secs seconds between writes.
 		 */
 		CALLB_CPR_SAFE_BEGIN(&cpr);
-
 		(void) cv_timedwait(&l2arc_feed_thr_cv, &l2arc_feed_thr_lock,
 		    lbolt + (hz * l2arc_feed_secs));
 		CALLB_CPR_SAFE_END(&cpr, &l2arc_feed_thr_lock);
@@ -4330,7 +4256,6 @@ l2arc_feed_thread(void)
 			mutex_exit(&l2arc_dev_mtx);
 			continue;
 		}
-
 		mutex_exit(&l2arc_dev_mtx);
 
 		/*
@@ -4386,17 +4311,15 @@ boolean_t
 l2arc_vdev_present(vdev_t *vd)
 {
 	l2arc_dev_t *dev;
-	//#ifdef ZVM_ENABLE
+
 	mutex_enter(&l2arc_dev_mtx);
-	//#endif
 	for (dev = list_head(l2arc_dev_list); dev != NULL;
 	    dev = list_next(l2arc_dev_list, dev)) {
 		if (dev->l2ad_vdev == vd)
 			break;
 	}
-	//#ifdef ZVM_ENABLE
 	mutex_exit(&l2arc_dev_mtx);
-	//#endif
+
 	return (dev != NULL);
 }
 
@@ -4439,14 +4362,10 @@ l2arc_add_vdev(spa_t *spa, vdev_t *vd, uint64_t start, uint64_t end)
 	/*
 	 * Add device to global list
 	 */
-	//#ifdef ZVM_ENABLE
 	mutex_enter(&l2arc_dev_mtx);
-	//#endif
 	list_insert_head(l2arc_dev_list, adddev);
 	atomic_inc_64(&l2arc_ndev);
-	//#ifdef ZVM_ENABLE
 	mutex_exit(&l2arc_dev_mtx);
-	//#endif
 }
 
 /*
@@ -4460,9 +4379,7 @@ l2arc_remove_vdev(vdev_t *vd)
 	/*
 	 * Find the device by vdev
 	 */
-	//#ifdef ZVM_ENABLE
 	mutex_enter(&l2arc_dev_mtx);
-	//#endif //ZVM_ENABLE
 	for (dev = list_head(l2arc_dev_list); dev; dev = nextdev) {
 		nextdev = list_next(l2arc_dev_list, dev);
 		if (vd == dev->l2ad_vdev) {
@@ -4478,9 +4395,8 @@ l2arc_remove_vdev(vdev_t *vd)
 	list_remove(l2arc_dev_list, remdev);
 	l2arc_dev_last = NULL;		/* may have been invalidated */
 	atomic_dec_64(&l2arc_ndev);
-	//#ifdef ZVM_ENABLE
 	mutex_exit(&l2arc_dev_mtx);
-	//#endif //ZVM_ENABLE
+
 	/*
 	 * Clear all buflists and ARC references.  L2ARC device flush.
 	 */
@@ -4497,27 +4413,22 @@ l2arc_init()
 	l2arc_ndev = 0;
 	l2arc_writes_sent = 0;
 	l2arc_writes_done = 0;
-	//#ifdef ZVM_ENABLE
+
 	mutex_init(&l2arc_feed_thr_lock, NULL, MUTEX_DEFAULT, NULL);
 	cv_init(&l2arc_feed_thr_cv, NULL, CV_DEFAULT, NULL);
 	mutex_init(&l2arc_dev_mtx, NULL, MUTEX_DEFAULT, NULL);
 	mutex_init(&l2arc_buflist_mtx, NULL, MUTEX_DEFAULT, NULL);
 	mutex_init(&l2arc_free_on_write_mtx, NULL, MUTEX_DEFAULT, NULL);
-	//#endif
+
 	l2arc_dev_list = &L2ARC_dev_list;
 	l2arc_free_on_write = &L2ARC_free_on_write;
 	list_create(l2arc_dev_list, sizeof (l2arc_dev_t),
 	    offsetof(l2arc_dev_t, l2ad_node));
 	list_create(l2arc_free_on_write, sizeof (l2arc_data_free_t),
 	    offsetof(l2arc_data_free_t, l2df_list_node));
-#ifdef __native_client__
-#if 0
-	l2arc_feed_thread();
-#endif
-#else
+
 	(void) thread_create(NULL, 0, l2arc_feed_thread, NULL, 0, &p0,
 	    TS_RUN, minclsyspri);
-#endif //__native_client__
 }
 
 void
@@ -4528,24 +4439,22 @@ l2arc_fini()
 	 * Because of this, we can assume that all l2arc devices have
 	 * already been removed when the pools themselves were removed.
 	 */
+
 	mutex_enter(&l2arc_feed_thr_lock);
 	cv_signal(&l2arc_feed_thr_cv);	/* kick thread out of startup */
 	l2arc_thread_exit = 1;
-#ifndef __native_client__
 	while (l2arc_thread_exit != 0)
 		cv_wait(&l2arc_feed_thr_cv, &l2arc_feed_thr_lock);
 	mutex_exit(&l2arc_feed_thr_lock);
-#endif //ZVM_ENABLE
 
 	l2arc_do_free_on_write();
 
-	//#ifdef ZVM_ENABLE
 	mutex_destroy(&l2arc_feed_thr_lock);
 	cv_destroy(&l2arc_feed_thr_cv);
 	mutex_destroy(&l2arc_dev_mtx);
 	mutex_destroy(&l2arc_buflist_mtx);
 	mutex_destroy(&l2arc_free_on_write_mtx);
-	//#endif //ZVM_ENABLE
+
 	list_destroy(l2arc_dev_list);
 	list_destroy(l2arc_free_on_write);
 }

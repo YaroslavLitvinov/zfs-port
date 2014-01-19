@@ -23,22 +23,25 @@
  * Use is subject to license terms.
  */
 
+#ifndef __native_client__
+#include <pthread.h>
+#else
+#include <pth/pthread.h>
+#endif //__native_client__
+
 #include <sys/debug.h>
 #include <sys/mutex.h>
 #include <sys/rwlock.h>
 #include <sys/thread.h>
 #include <sys/types.h>
 
-#include <pthread.h>
 #include <errno.h>
 
 /*ARGSUSED*/
 void
 rw_init(krwlock_t *rwlp, char *name, int type, void *arg)
 {
-#ifndef __native_client__
 	VERIFY(pthread_rwlock_init(&rwlp->rw_lock, NULL) == 0);
-#endif
 	zmutex_init(&rwlp->mutex);
 	rwlp->rw_owner = NULL;
 	rwlp->thr_count = 0;
@@ -47,9 +50,7 @@ rw_init(krwlock_t *rwlp, char *name, int type, void *arg)
 void
 rw_destroy(krwlock_t *rwlp)
 {
-#ifndef __native_client__
 	VERIFY(pthread_rwlock_destroy(&rwlp->rw_lock) == 0);
-#endif
 	zmutex_destroy(&rwlp->mutex);
 	rwlp->rw_owner = (void *)-1UL;
 	rwlp->thr_count = -2;
@@ -63,18 +64,16 @@ rw_enter(krwlock_t *rwlp, krw_t rw)
 	ASSERT(rwlp->rw_owner != curthread);
 
 	if (rw == RW_READER) {
-#ifndef __native_client__
 		VERIFY(pthread_rwlock_rdlock(&rwlp->rw_lock) == 0);
-#endif
+
 		mutex_enter(&rwlp->mutex);
 		ASSERT(rwlp->thr_count >= 0);
 		rwlp->thr_count++;
 		mutex_exit(&rwlp->mutex);
 		ASSERT(rwlp->rw_owner == NULL);
 	} else {
-#ifndef __native_client__
 		VERIFY(pthread_rwlock_wrlock(&rwlp->rw_lock) == 0);
-#endif
+
 		ASSERT(rwlp->rw_owner == NULL);
 		ASSERT(rwlp->thr_count == 0);
 		rwlp->thr_count = -1;
@@ -100,9 +99,7 @@ rw_exit(krwlock_t *rwlp)
 		rwlp->thr_count--;
 		mutex_exit(&rwlp->mutex);
 	}
-#ifndef __native_client__
 	VERIFY(pthread_rwlock_unlock(&rwlp->rw_lock) == 0);
-#endif
 }
 
 int
@@ -113,14 +110,11 @@ rw_tryenter(krwlock_t *rwlp, krw_t rw)
 	ASSERT(rwlp->rw_owner != (void *)-1UL);
 	ASSERT(rwlp->rw_owner != curthread);
 
-#ifdef __native_client__
-	rv=0;
-#else
 	if (rw == RW_READER)
 		rv = pthread_rwlock_tryrdlock(&rwlp->rw_lock);
 	else
 		rv = pthread_rwlock_trywrlock(&rwlp->rw_lock);
-#endif
+
 	if (rv == 0) {
 		if(rw == RW_READER) {
 			mutex_enter(&rwlp->mutex);
@@ -158,4 +152,3 @@ int rw_lock_held(krwlock_t *rwlp)
 	mutex_exit(&rwlp->mutex);
 	return ret;
 }
-

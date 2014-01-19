@@ -3,6 +3,7 @@ include $(PROJ_ROOT)/Makefile.env
 
 TCFLAGS = $(CFLAGS)
 TCFLAGS += -I./include 
+TCFLAGS += -include "pth/pthread.h"
 TCFLAGS += -I$(PROJ_ROOT)/lib/libumem/include 
 TCFLAGS += -I$(PROJ_ROOT)/lib/libavl/include
 TCFLAGS += -I$(PROJ_ROOT)/lib/libnvpair/include

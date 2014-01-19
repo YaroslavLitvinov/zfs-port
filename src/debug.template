@@ -18,14 +18,3 @@ add-symbol-file {NEXE_PATH} 0x440a00020000
 b main
 c
 
-echo b rw_lock_held if rwlp->thr_count==0
-echo b spa_lookup if spa_namespace_lock->m_owner != 1
-b rw_exit if (int)rwlp->rw_owner==1&&rwlp->thr_count!=-1
-b mutex_exit if (int)mp->m_owner!=1
-b dbuf_will_dirty if tx->tx_txg == 0
-b dnode_create if dnp==0
-b vdev_config_dirty if spa->spa_dsl_pool==0
-b spa_config_held if (int)spa->spa_config_lock.scl_writer!=1 && rw==1
-echo b zfs_create_fs
-echo b vdev_config_generate
-echo b vdev_alloc

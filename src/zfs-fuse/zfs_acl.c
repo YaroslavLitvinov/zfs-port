@@ -942,9 +942,7 @@ zfs_acl_node_read(znode_t *zp, zfs_acl_t **aclpp, boolean_t will_modify)
 	zfs_acl_node_t	*aclnode;
 	int error;
 
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&zp->z_acl_lock));
-#endif
 
 	if (zp->z_phys->zp_acl.z_acl_extern_obj == 0) {
 		*aclpp = zfs_acl_node_read_internal(zp, will_modify);
@@ -1004,10 +1002,8 @@ zfs_aclset_common(znode_t *zp, zfs_acl_t *aclp, cred_t *cr,
 	dmu_object_type_t otype;
 	zfs_acl_node_t	*aclnode;
 
-#ifndef __native_client__
 	ASSERT(MUTEX_HELD(&zp->z_lock));
 	ASSERT(MUTEX_HELD(&zp->z_acl_lock));
-#endif
 
 	dmu_buf_will_dirty(zp->z_dbuf, tx);
 
@@ -1464,10 +1460,10 @@ zfs_acl_chmod(znode_t *zp, uint64_t mode, zfs_acl_t *aclp)
 	int 		need_canonical_six = 1;
 	uint16_t	iflags, type;
 	uint32_t	access_mask;
-#ifndef __native_client__
+
 	ASSERT(MUTEX_HELD(&zp->z_acl_lock));
 	ASSERT(MUTEX_HELD(&zp->z_lock));
-#endif
+
 	aclp->z_hints = (zp->z_phys->zp_flags & V4_ACL_WIDE_FLAGS);
 
 	/*

@@ -632,11 +632,7 @@ avl_add(avl_tree_t *tree, void *new_node)
 	 */
 	if (avl_find(tree, new_node, &where) != NULL)
 #ifdef _KERNEL
-#ifdef __native_client__
-	    ASSERT(0);
-#else
 		panic("avl_find() succeeded inside avl_add()");
-#endif
 #else
 		ASSERT(0);
 #endif
@@ -1035,5 +1031,3 @@ done:
 
 	return (AVL_NODE2DATA(node, off));
 }
-
-

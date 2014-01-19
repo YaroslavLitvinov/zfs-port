@@ -24,7 +24,7 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
+
 
 #include <sys/systm.h>
 #include <sys/param.h>
@@ -36,7 +36,6 @@
 refstr_t *
 refstr_alloc(const char *str)
 {
-#ifdef ZVM_ENABLE
 	refstr_t *rsp;
 	size_t size = sizeof (rsp->rs_size) + sizeof (rsp->rs_refcnt) +
 		strlen(str) + 1;
@@ -47,9 +46,6 @@ refstr_alloc(const char *str)
 	rsp->rs_refcnt = 1;
 	(void) strcpy(rsp->rs_string, str);
 	return (rsp);
-#else
-	return NULL;
-#endif
 }
 
 const char *
@@ -61,18 +57,12 @@ refstr_value(refstr_t *rsp)
 void
 refstr_hold(refstr_t *rsp)
 {
-#ifdef ZVM_ENABLE
 	atomic_add_32(&rsp->rs_refcnt, 1);
-#endif
 }
 
 void
 refstr_rele(refstr_t *rsp)
 {
-#ifdef ZVM_ENABLE
 	if (atomic_add_32_nv(&rsp->rs_refcnt, -1) == 0)
 		kmem_free(rsp, (size_t)rsp->rs_size);
-#endif //ZVM_ENABLE
 }
-
-#endif //ZVM_COW

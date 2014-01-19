@@ -23,7 +23,11 @@
  * Use is subject to license terms.
  */
 
-#ifdef ZVM_COW
+#ifndef __native_client__
+#include <pthread.h>
+#else
+#include <pth/pthread.h>
+#endif //__native_client__
 
 #include <sys/debug.h>
 #include <sys/mutex.h>
@@ -36,42 +40,34 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
-#include <pthread.h>
 
 /*ARGSUSED*/
 void
 cv_init(kcondvar_t *cv, char *name, int type, void *arg)
 {
-#ifdef ZVM_ENABLE
 	ASSERT(type == CV_DEFAULT);
 
 	VERIFY(pthread_cond_init(cv, NULL) == 0);
-#endif //ZVM_ENABLE
 }
 
 void
 cv_destroy(kcondvar_t *cv)
 {
-#ifdef ZVM_ENABLE
 	VERIFY(pthread_cond_destroy(cv) == 0);
-#endif
 }
 
 void
 cv_wait(kcondvar_t *cv, kmutex_t *mp)
 {
-#ifdef ZVM_ENABLE
 	ASSERT(mutex_owner(mp) == curthread);
 	mp->m_owner = NULL;
 	VERIFY(pthread_cond_wait(cv, &mp->m_lock) == 0);
 	mp->m_owner = curthread;
-#endif //ZVM_ENABLE
 }
 
 clock_t
 cv_timedwait(kcondvar_t *cv, kmutex_t *mp, clock_t abstime)
 {
-#ifdef ZVM_ENABLE
 	int error;
 	struct timespec ts;
 	struct timeval tv;
@@ -108,25 +104,16 @@ top:
 	ASSERT(error == 0);
 
 	return (1);
-#else
-	return (1);
-#endif //ZVM_ENABLE
 }
 
 void
 cv_signal(kcondvar_t *cv)
 {
-#ifdef ZVM_ENABLE
 	VERIFY(pthread_cond_signal(cv) == 0);
-#endif //ZVM_ENABLE
 }
 
 void
 cv_broadcast(kcondvar_t *cv)
 {
-#ifdef ZVM_ENABLE
 	VERIFY(pthread_cond_broadcast(cv) == 0);
-#endif
 }
-
-#endif //ZVM_COW

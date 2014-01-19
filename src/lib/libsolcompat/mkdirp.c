@@ -38,8 +38,6 @@
  * Does NOT simplify pathnames with . or .. in them.
  */
 
-#ifdef ZVM_COW
-
 #include <sys/types.h>
 #include <libgen.h>
 #include <stdlib.h>
@@ -212,6 +210,3 @@ simplify(const char *str)
 	free(wcPath);
 	return (mbPath);
 }
-
-
-#endif //ZVM_COW

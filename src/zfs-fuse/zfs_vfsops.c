@@ -705,13 +705,9 @@ zfs_domount(vfs_t *vfsp, char *osname)
 
 	ASSERT(vfs_devismounted(mount_dev) == 0);
 
-#ifdef __native_client__
-	recordsize = RECORDSIZE;
-#else
 	if (error = dsl_prop_get_integer(osname, "recordsize", &recordsize,
 	    NULL))
 		goto out;
-#endif
 
 	vfsp->vfs_dev = mount_dev;
 	vfsp->vfs_fstype = zfsfstype;
@@ -1490,9 +1486,8 @@ zfs_resume_fs(zfsvfs_t *zfsvfs, const char *osname, int mode)
 	int err;
 
 	ASSERT(RRW_WRITE_HELD(&zfsvfs->z_teardown_lock));
-#ifndef __native_client__
 	ASSERT(RW_WRITE_HELD(&zfsvfs->z_teardown_inactive_lock));
-#endif //__native_client__
+
 	err = dmu_objset_open(osname, DMU_OST_ZFS, mode, &zfsvfs->z_os);
 	if (err) {
 		zfsvfs->z_os = NULL;

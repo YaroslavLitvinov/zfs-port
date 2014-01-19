@@ -26,8 +26,6 @@
  * Copyright 2006 Ricardo Correia
  */
 
-#ifdef ZVM_COW
-
 #include <sys/cred_impl.h>
 #include <sys/policy.h>
 #include <sys/stat.h>
@@ -560,5 +558,3 @@ secpolicy_vnode_owner(const cred_t *cr, uid_t owner)
 	return (PRIV_POLICY(cr, PRIV_FILE_OWNER, allzone, EPERM, NULL));
 }
 
-
-#endif //ZVM_COW
