@@ -607,7 +607,7 @@ dnode_hold_impl(objset_impl_t *os, uint64_t object, int flag,
 
 		dn = dnode_create(os, dnp, db, object);
 		winner = atomic_cas_ptr(&children_dnodes[idx], NULL, dn);
-		if (winner != NULL) {
+		if (winner != NULL && winner != dn) {
 			dnode_destroy(dn);
 			dn = winner;
 		}

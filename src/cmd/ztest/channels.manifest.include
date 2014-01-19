@@ -11,8 +11,8 @@ Channel = {ABS_PATH}{NAME}.stdout.log, /dev/stdout, 0, 0, 0, 0, 99999999, 999999
 Channel = {ABS_PATH}{NAME}.stderr.log, /dev/stderr, 0, 0, 0, 0, 99999999, 99999999
 Channel = {ABS_PATH}{NAME}.nvram, /dev/nvram, 0, 0, 99999999, 9999999, 0, 0
 Channel = {ABS_PATH}{NAME}.zfs.log, /dev/zfslog, 0, 0, 0, 0, 999999, 999999
-Channel = {ABS_PATH}{NAME}.nexe, /dev/urandom, 0, 0, 999999999, 99999999, 0, 0
-Channel = {ABS_PATH}{NAME}.nexe, /dev/random, 0, 0, 999999999, 99999999, 0, 0
+==Channel = {ABS_PATH}{NAME}.nexe, /dev/urandom, 0, 0, 999999999, 99999999, 0, 0
+==Channel = {ABS_PATH}{NAME}.nexe, /dev/random, 0, 0, 999999999, 99999999, 0, 0
 Channel = {ABS_PATH}{NAME}.zpool.0.cache, /dev/ztest.0a, 3, 0, 9999999, 999999999, 9999999, 9999999999
 Channel = {ABS_PATH}trace/1-TRACE.1.unparsed, /dev/trace.unparsed, 0, 0, 0, 0, 999999999, 999999999
 =======================================================================
