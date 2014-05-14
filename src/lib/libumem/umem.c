@@ -591,11 +591,7 @@ umem_cache_t		umem_null_cache = {
 		NULL, 0, 0, 0, 0
 	}, {
 		NULL, 0, 0, 0, 0
-	}, 
-/* #ifdef DEBUG */
-/* 	{ "" }, /\*padding*\/ */
-/* #endif */
-	{
+	}, {
 	    {
 		DEFAULTMUTEX,		/* start of CPU cache */
 		0, 0, NULL, NULL, -1, -1, 0

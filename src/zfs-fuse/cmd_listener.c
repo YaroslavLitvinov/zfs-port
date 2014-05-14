@@ -31,7 +31,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <fuse/fuse.h>
+#include "fuse.h"
 
 #include "zfs_ioctl.h"
 #include "zfsfuse_socket.h"

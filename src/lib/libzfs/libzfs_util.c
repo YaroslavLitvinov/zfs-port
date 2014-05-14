@@ -562,7 +562,6 @@ libzfs_init(void)
 		return (NULL);
 	}
 
-#ifndef __native_client__
 	/* ZFSFUSE */
 	if ((hdl->libzfs_fd = zfsfuse_open(ZFS_SOCK_NAME, O_RDWR)) == -1) {
 		free(hdl);
@@ -576,7 +575,7 @@ libzfs_init(void)
 	}
 
 	hdl->libzfs_sharetab = fopen("/etc/dfs/sharetab", "r");
-#endif //__native_client__
+
 	zfs_prop_init();
 	zpool_prop_init();
 

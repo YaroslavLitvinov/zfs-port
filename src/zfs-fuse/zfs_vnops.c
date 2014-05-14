@@ -76,6 +76,7 @@
 #include <sys/attr.h>
 #include <sys/zfs_debug.h>
 
+#include "zrt/dirent_engine.h"
 /*
  * Programming rules.
  *
@@ -1948,6 +1949,8 @@ zfs_readdir(vnode_t *vp, uio_t *uio, cred_t *cr, int *eofp,
 	ZFS_ENTER(zfsvfs);
 	ZFS_VERIFY_ZP(zp);
 
+	struct DirentEnginePublicInterface *dirent_engine = INSTANCE_L(DIRENT_ENGINE)();
+
 	/*
 	 * If we are not given an eof variable,
 	 * use a local one.
@@ -2077,8 +2080,10 @@ zfs_readdir(vnode_t *vp, uio_t *uio, cred_t *cr, int *eofp,
 
 		if (flags & V_RDDIR_ENTFLAGS)
 			reclen = EDIRENT_RECLEN(strlen(zap.za_name));
-		else
-			reclen = DIRENT64_RECLEN(strlen(zap.za_name));
+		else{
+		    reclen = dirent_engine->adjusted_dirent_size(strlen(zap.za_name) );
+		    //reclen = DIRENT64_RECLEN(strlen(zap.za_name));
+		}
 
 		/*
 		 * Will this entry fit in the buffer?
@@ -2110,12 +2115,17 @@ zfs_readdir(vnode_t *vp, uio_t *uio, cred_t *cr, int *eofp,
 			/*
 			 * Add normal entry:
 			 */
-			odp->d_ino = objnum;
-			odp->d_reclen = reclen;
-			/* NOTE: d_off is the offset for the *next* entry */
-			next = &(odp->d_off);
-			(void) strncpy(odp->d_name, zap.za_name,
-			    DIRENT64_NAMELEN(reclen));
+			size_t reclen_in_fact = dirent_engine
+			    ->add_dirent_into_buf( (char *)odp, 
+						   reclen, 
+						   objnum, 
+						   0,
+						   0,
+						   zap.za_name );
+#ifdef DEBUG
+			printf("dir=%s\n", zap.za_name);fflush(0);
+#endif
+			assert(reclen==reclen_in_fact);
 			odp = (dirent64_t *)((intptr_t)odp + reclen);
 		}
 		outcount += reclen;
@@ -2135,7 +2145,7 @@ zfs_readdir(vnode_t *vp, uio_t *uio, cred_t *cr, int *eofp,
 		} else {
 			offset += 1;
 		}
-		*next = offset;
+		//*next = offset;
 	}
 	zp->z_zn_prefetch = B_FALSE; /* a lookup will re-enable pre-fetching */
 

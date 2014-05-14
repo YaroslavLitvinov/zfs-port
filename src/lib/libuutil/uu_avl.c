@@ -23,12 +23,7 @@
  * Use is subject to license terms.
  */
 
-#ifndef __native_client__
 #include <pthread.h>
-#else
-#include <pth/pthread.h>
-#endif //__native_client__
-
 #include "libuutil_common.h"
 
 #include <stdlib.h>

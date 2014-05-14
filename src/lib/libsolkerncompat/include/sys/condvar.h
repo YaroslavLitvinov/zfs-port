@@ -30,9 +30,7 @@
 
 #include <sys/types.h>
 #include <sys/mutex.h>
-#ifndef __native_client__
 #include <pthread.h>
-#endif //__native_client__
 
 /*
  * Condition variables

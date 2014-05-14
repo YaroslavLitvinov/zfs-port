@@ -2,7 +2,7 @@ PROJ_ROOT = ../..
 include $(PROJ_ROOT)/Makefile.env
 
 CFLAGS +=-D_KERNEL
-CFLAGS += -include "pth/pthread.h"
+CFLAGS += -include "pthread.h"
 CFLAGS += -I${ZVM_PREFIX_ABSPATH}/include  #zlib include
 CFLAGS += -I. -I./include -I./include/$(ARCH) -I$(PROJ_ROOT)/lib/libumem/include -I$(PROJ_ROOT)/lib/libavl/include 
 

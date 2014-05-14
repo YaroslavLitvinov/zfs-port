@@ -95,6 +95,9 @@ int zfsfuse_ioctl_read_loop(int fd, void *buf, int bytes)
 // 			perror("recvfrom");
 			return -1;
 		}
+		else{
+		    fprintf(stderr, "zfsfuse_ioctl_read_loop(%d): recvfrom %d bytes\n", fd, ret);
+		}
 		read_bytes += ret;
 		left_bytes -= ret;
 	}
@@ -144,13 +147,6 @@ int zfsfuse_ioctl(int fd, int32_t request, void *arg)
 	cmd.cmd_type = IOCTL_REQ;
 	cmd.cmd_u.ioctl_req.cmd = request;
 	cmd.cmd_u.ioctl_req.arg = (uint64_t)(uintptr_t) arg;
-    
-#ifdef __native_client__
-    if ( request == ZFS_IOC_POOL_CREATE ){
-	int ioctl_ret = zfsdev_ioctl(NULL, request, (uintptr_t) cmd.cmd_u.ioctl_req.arg, 0, NULL, NULL);
-	ASSERT(!ioctl_ret);
-    }
-#else
 
 	if(write(fd, &cmd, sizeof(zfsfuse_cmd_t)) != sizeof(zfsfuse_cmd_t))
 		return -1;
@@ -198,7 +194,6 @@ int zfsfuse_ioctl(int fd, int32_t request, void *arg)
 				break;
 		}
 	}
-#endif //__native_client__
 }
 
 /* If you change this, check _sol_mount in lib/libsolcompat/include/sys/mount.h */

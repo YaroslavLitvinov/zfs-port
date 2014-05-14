@@ -36,9 +36,7 @@
 #include <fs/fs_subr.h>
 #include <string.h>
 #include <errno.h>
-#ifndef __native_client__
 #include <pthread.h>
-#endif //__native_client__
 #include <unistd.h>
 
 struct vfs st_rootvfs = {};

@@ -339,9 +339,7 @@ struct umem_cache {
 	umem_magtype_t	*cache_magtype;		/* magazine type */
 	umem_maglist_t	cache_full;		/* full magazines */
 	umem_maglist_t	cache_empty;		/* empty magazines */
-    //#ifdef DEBUG
-    //    char padding[168];
-    //#endif
+
 	/*
 	 * Per-CPU layer
 	 */

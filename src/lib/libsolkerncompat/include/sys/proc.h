@@ -28,9 +28,7 @@
 #define _SOL_PROC_H
 
 #include <sys/rctl.h>
-#ifndef __native_client__
 #include <pthread.h>
-#endif //__native_client__
 
 #define issig(why) (FALSE)
 

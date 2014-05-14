@@ -462,34 +462,16 @@ vn_rdwr(int uio, vnode_t *vp, void *addr, ssize_t len, offset_t offset,
 	ssize_t iolen, split;
 
 	if (uio == UIO_READ) {
-#ifdef __native_client__
-	    lseek(vp->v_fd, offset, SEEK_SET);
-	    iolen = read(vp->v_fd, addr, len);
-#ifdef ZVM_IO_DEBUG
-	    printf("vn_rdwr UIO_READ offset=0x%x, iolen=%d\n", offset, iolen);
-#endif //ZVM_IO_DEBUG
-#else
-	    iolen = pread64(vp->v_fd, addr, len, offset);
-#endif
+		iolen = pread64(vp->v_fd, addr, len, offset);
 	} else {
 		/*
 		 * To simulate partial disk writes, we split writes into two
 		 * system calls so that the process can be killed in between.
 		 */
 		split = (len > 0 ? rand() % len : 0);
-#ifdef __native_client__
-		lseek(vp->v_fd, offset, SEEK_SET);
-		iolen = write(vp->v_fd, addr, split);
-		lseek(vp->v_fd, offset+split, SEEK_SET);
-		iolen += write(vp->v_fd, (char *)addr + split, len - split);
-#ifdef ZVM_IO_DEBUG
-	    printf("vn_rdwr UIO_WRITE offset=0x%x, iolen=%d\n", offset, iolen);
-#endif //ZVM_IO_DEBUG
-#else
 		iolen = pwrite64(vp->v_fd, addr, split, offset);
 		iolen += pwrite64(vp->v_fd, (char *)addr + split,
 		    len - split, offset + split);
-#endif
 	}
 
 	if (iolen < 0)

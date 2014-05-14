@@ -32,9 +32,7 @@
 #include <sys/disp.h>
 #include <sys/kmem.h>
 #include <errno.h>
-#ifndef __native_client__
 #include <pthread.h>
-#endif //__native_client__
 
 #include "fuse.h"
 #include "fuse_listener.h"
@@ -91,28 +89,6 @@ void zfsfuse_listener_exit()
 
 	close(newfs_fd[0]);
 	close(newfs_fd[1]);
-}
-
-int zfsfuse_newfs(char *mntpoint, struct fuse_chan *ch)
-{
-	fuse_fs_info_t info = { 0 };
-
-	info.fd = fuse_chan_fd(ch);
-	info.bufsize = fuse_chan_bufsize(ch);
-	info.ch = ch;
-	info.se = fuse_chan_session(ch);
-	info.mntlen = strlen(mntpoint);
-
-	if(write(newfs_fd[1], &info, sizeof(info)) != sizeof(info)) {
-		perror("Warning (while writing fsinfo to newfs_fd)");
-		return -1;
-	}
-
-	if(write(newfs_fd[1], mntpoint, info.mntlen) != info.mntlen) {
-		perror("Warning (while writing mntpoint to newfs_fd)");
-		return -1;
-	}
-	return 0;
 }
 
 /*
@@ -257,6 +233,15 @@ static void *zfsfuse_listener_loop(void *arg)
 				if(res == 0)
 					continue;
 
+				if ( res >= 0 ){
+				    fprintf(stderr, "fuse: chan_receive %d, %d:%d\n", 
+					    i, res, fsinfo[i].bufsize);
+				    for (int j=0; j < res && j < fsinfo[i].bufsize; j++){
+					fprintf(stderr, "%c", buf[j]);
+				    }
+				    fprintf(stderr, "\n");
+				}
+
 				struct fuse_session *se = fsinfo[i].se;
 				struct fuse_chan *ch = fsinfo[i].ch;
 
@@ -299,19 +284,23 @@ static void *zfsfuse_listener_loop(void *arg)
 	return NULL;
 }
 
-int zfsfuse_listener_start()
-{
-#ifdef DEBUG
-    fprintf(stdout, "zfsfuse_listener_start...\n");
+#ifdef NOIOCTL
+void* zfsfuse_listener_start(void* obj)
+#else
+    int zfsfuse_listener_start()
 #endif
-	for(int i = 0; i < NUM_THREADS; i++)
-		VERIFY(pthread_create(&fuse_threads[i], NULL, zfsfuse_listener_loop, NULL) == 0);
+ {
+#ifdef NOIOCTL
+	 (void)obj;
+#endif
+	 for(int i = 0; i < NUM_THREADS; i++)
+	     VERIFY(pthread_create(&fuse_threads[i], NULL, zfsfuse_listener_loop, NULL) == 0);
 
-	for(int i = 0; i < NUM_THREADS; i++) {
-		int ret = pthread_join(fuse_threads[i], NULL);
-		if(ret != 0)
-			fprintf(stderr, "Warning: pthread_join() on thread %i returned %i\n", i, ret);
-	}
+	 for(int i = 0; i < NUM_THREADS; i++) {
+	     int ret = pthread_join(fuse_threads[i], NULL);
+	     if(ret != 0)
+		 fprintf(stderr, "Warning: pthread_join() on thread %i returned %i\n", i, ret);
+	 }
 
 #ifdef DEBUG
 	fprintf(stderr, "Exiting...\n");

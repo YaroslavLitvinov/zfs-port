@@ -1,0 +1,7 @@
+*~
+*.log
+*.manifest
+*.nvram
+*.pipe
+*.scp
+*.cache

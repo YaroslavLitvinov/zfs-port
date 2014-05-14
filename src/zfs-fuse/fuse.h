@@ -26,8 +26,11 @@
 #ifndef ZFSFUSE_FUSE_H
 #define ZFSFUSE_FUSE_H
 
-#define FUSE_USE_VERSION 25
+#ifndef __native_client__
 
-#include <fuse/fuse_lowlevel.h>
+#define FUSE_USE_VERSION 25
+#include <fuse.h>
+
+#endif //__native_client__
 
 #endif
