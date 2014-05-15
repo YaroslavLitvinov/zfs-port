@@ -18,23 +18,26 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
-#include <fcntl.h>
 #include <stdarg.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <assert.h>
 
 extern "C" {
 #include "zrtlog.h"
 #include "zrt_helper_macros.h"
 }
-#include "MemMount.h"
 
 #include "lowlevel_filesystem.h"
 #include "zfs_toplevel_filesystem.h"
 
 extern "C" {
 #include <fs/mounts_interface.h>
+#include <helpers/path_utils.h>
 #include "handle_allocator.h" //struct HandleAllocator, struct HandleItem
-#include "path_utils.h"
 #include "open_file_description.h" //struct OpenFilesPool, struct OpenFileDescription
 #include "dirent_engine.h"
 #include "cached_lookup.h"
@@ -72,7 +75,6 @@ struct ZfsTopLevelFs{
     struct OpenFilesPool*   open_files_pool;
     struct CachedLookupPublicInterface* cached_lookup;
     struct LowLevelFilesystemPublicInterface* lowlevelfs;
-    MemMount*               mem_mount_cpp;
     struct MountSpecificPublicInterface* mount_specific_interface;
 };
 
@@ -866,7 +868,7 @@ static struct MountsPublicInterface KTopLevelMountWraper = {
     toplevel_dup,
     toplevel_dup2,
     toplevel_link,
-    EMemMountId,
+    EUserFsId,
     NULL
 };
 
@@ -885,7 +887,6 @@ CONSTRUCT_L(ZFS_TOPLEVEL_FILESYSTEM)( struct HandleAllocator* handle_allocator,
     this_->open_files_pool = open_files_pool; /*use existing open files pool*/
     this_->cached_lookup = cached_lookup;
     this_->lowlevelfs = lowlevelfs;
-    this_->mem_mount_cpp = new MemMount;
     return (struct MountsPublicInterface*)this_;
 }
 

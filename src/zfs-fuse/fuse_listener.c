@@ -143,7 +143,7 @@ static void new_fs()
 
 	if(nfds == MAX_FDS) {
 		fprintf(stderr, "Warning: filesystem limit (%i) reached, unmounting..\n", MAX_FILESYSTEMS);
-		fuse_unmount(mntpoint);
+		//fuse_unmount(mntpoint);
 		free(mntpoint);
 		return;
 	}
@@ -170,8 +170,8 @@ static void destroy_fs(int i)
 #ifdef DEBUG
 	fprintf(stderr, "Filesystem %i (%s) is being unmounted\n", i, mountpoints[i]);
 #endif
-	fuse_session_reset(fsinfo[i].se);
-	fuse_session_destroy(fsinfo[i].se);
+	//fuse_session_reset(fsinfo[i].se);
+	//fuse_session_destroy(fsinfo[i].se);
 	close(fds[i].fd);
 	fds[i].fd = -1;
 	free(mountpoints[i]);
@@ -179,108 +179,6 @@ static void destroy_fs(int i)
 
 static void *zfsfuse_listener_loop(void *arg)
 {
-	size_t bufsize = 0;
-	char *buf = NULL;
-
-	VERIFY(pthread_mutex_lock(&mtx) == 0);
-
-	while(!exit_fuse_listener) {
-		int ret = poll(fds, nfds, 1000);
-		if(ret == 0 || (ret == -1 && errno == EINTR))
-			continue;
-
-		if(ret == -1) {
-			perror("poll");
-			continue;
-		}
-
-		int oldfds = nfds;
-
-		for(int i = 0; i < oldfds; i++) {
-			short rev = fds[i].revents;
-
-			if(rev == 0)
-				continue;
-
-			fds[i].revents = 0;
-
-			ASSERT((rev & POLLNVAL) == 0);
-
-			if(!(rev & POLLIN) && !(rev & POLLERR) && !(rev & POLLHUP))
-				continue;
-
-			if(i == 0) {
-				new_fs();
-			} else {
-				/* Handle request */
-
-				if(fsinfo[i].bufsize > bufsize) {
-					char *new_buf = realloc(buf, fsinfo[i].bufsize);
-					if(new_buf == NULL) {
-						fprintf(stderr, "Warning: out of memory!\n");
-						continue;
-					}
-					buf = new_buf;
-					bufsize = fsinfo[i].bufsize;
-				}
-
-				int res = fuse_chan_receive(fsinfo[i].ch, buf, fsinfo[i].bufsize);
-				if(res == -1 || fuse_session_exited(fsinfo[i].se)) {
-					destroy_fs(i);
-					continue;
-				}
-
-				if(res == 0)
-					continue;
-
-				if ( res >= 0 ){
-				    fprintf(stderr, "fuse: chan_receive %d, %d:%d\n", 
-					    i, res, fsinfo[i].bufsize);
-				    for (int j=0; j < res && j < fsinfo[i].bufsize; j++){
-					fprintf(stderr, "%c", buf[j]);
-				    }
-				    fprintf(stderr, "\n");
-				}
-
-				struct fuse_session *se = fsinfo[i].se;
-				struct fuse_chan *ch = fsinfo[i].ch;
-
-				/*
-				 * While we process this request, we let another
-				 * thread receive new events
-				 */
-				VERIFY(pthread_mutex_unlock(&mtx) == 0);
-
-				fuse_session_process(se, buf, res, ch);
-
-				/* Acquire the mutex before proceeding */
-				VERIFY(pthread_mutex_lock(&mtx) == 0);
-
-				/*
-				 * At this point, we can no longer trust oldfds
-				 * to be accurate, so we exit this loop
-				 */
-				break;
-			}
-		}
-
-		/* Free the closed file descriptors entries */
-		int write_ptr = 0;
-		for(int read_ptr = 0; read_ptr < nfds; read_ptr++) {
-			if(fds[read_ptr].fd == -1)
-				continue;
-			if(read_ptr != write_ptr) {
-				fds[write_ptr] = fds[read_ptr];
-				fsinfo[write_ptr] = fsinfo[read_ptr];
-				mountpoints[write_ptr] = mountpoints[read_ptr];
-			}
-			write_ptr++;
-		}
-		nfds = write_ptr;
-	}
-
-	VERIFY(pthread_mutex_unlock(&mtx) == 0);
-
 	return NULL;
 }
 
@@ -310,10 +208,10 @@ void* zfsfuse_listener_start(void* obj)
 		if(fds[i].fd == -1)
 			continue;
 
-		fuse_session_exit(fsinfo[i].se);
-		fuse_session_reset(fsinfo[i].se);
-		fuse_unmount(mountpoints[i]);
-		fuse_session_destroy(fsinfo[i].se);
+		//fuse_session_exit(fsinfo[i].se);
+		//fuse_session_reset(fsinfo[i].se);
+		//fuse_unmount(mountpoints[i]);
+		//fuse_session_destroy(fsinfo[i].se);
 
 		free(mountpoints[i]);
 	}

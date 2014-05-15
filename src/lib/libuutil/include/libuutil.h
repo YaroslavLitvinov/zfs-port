@@ -31,10 +31,12 @@
 
 #include <sys/types.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 #ifdef	__cplusplus
 extern "C" {
 #endif
+
 
 /*
  * Standard flags codes.

@@ -71,6 +71,13 @@ pthread_t storage_create_thread_id;
 
 #endif //NOIOCTL
 
+#define ZVM_UMEM_INIT	{						\
+	/*call umem library constructor manually for statically linked app*/ \
+	umem_startup();							\
+	libsolkerncompat_init();					\
+    }
+
+
 static const char *cf_pidfile = NULL;
 static int cf_daemonize = 1;
 
@@ -171,6 +178,8 @@ static void* storage_create_thread(void* obj){
 int main(int argc, char *argv[])
 {
 	int ret;
+
+	ZVM_UMEM_INIT;
 
 	if(do_init() != 0) {
 		do_exit();

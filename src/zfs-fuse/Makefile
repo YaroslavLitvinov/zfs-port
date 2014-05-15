@@ -12,25 +12,29 @@ CFLAGS += \
 -I$(PROJ_ROOT)/lib/libsolkerncompat/include \
 -I. 
 
-LD_LIBRARIES=-lz -lrt -lcontext -m
+LD_LIBRARIES=-lz -lrt -lcontext -lm
 LDLIBZPOOL_FLAGS=-L$(PROJ_ROOT)/lib/libzpool -lzpool-kernel
 LDLIBCOMMON_FLAGS=-L$(PROJ_ROOT)/lib/libzfscommon -lzfscommon-kernel
 LDLIBNVPAIR_FLAGS=-L$(PROJ_ROOT)/lib/libnvpair -lnvpair-kernel
 LDLIBSOLKERNCOMPAT_FLAGS=-L$(PROJ_ROOT)/lib/libsolkerncompat -lsolkerncompat
 LDLIBUMEM_FLAGS=-L$(PROJ_ROOT)/lib/libumem -lumem
 LDLIBAVL_FLAGS=-L$(PROJ_ROOT)/lib/libavl -lavl
+LDLIBZFS_FLAGS=-L$(PROJ_ROOT)/lib/libzfs -lzfs
+LDLIBUUTILS_FLAGS=-L$(PROJ_ROOT)/lib/libuutil -luutil
 
 LDFLAGS += \
+$(LD_LIBRARIES) \
 $(LDLIBUMEM_FLAGS) \
+$(LDLIBZFS_FLAGS) \
 $(LDLIBZPOOL_FLAGS) \
 $(LDLIBAVL_FLAGS) \
 $(LDLIBCOMMON_FLAGS) \
 $(LDLIBNVPAIR_FLAGS) \
 $(LDLIBSOLKERNCOMPAT_FLAGS) \
-$(LD_LIBRARIES) \
+$(LDLIBUUTILS_FLAGS) \
 $(LDLIBSOLKERNCOMPAT_FLAGS) \
-$(LDLIBZPOOL_FLAGS)
-
+$(LDLIBZPOOL_FLAGS) \
+$(LD_LIBRARIES)
 #include twice some libs to solve unresolved externals from libumem
 
 
@@ -43,7 +47,7 @@ config:
 	mkdir trace -p
 	touch $(NAME).pipe
 #genmanifest
-	TIMEOUT=5000 \
+	TIMEOUT=100 \
 	ABS_PATH=$(CURDIR) \
 	NAME=$(NAME) \
 	CHANNELS_INCLUDE=channels.manifest.include \
@@ -60,7 +64,7 @@ file:
 	rm -f -v $(NAME).zpool.0.cache
 
 launch:
-	$(ZEROVM) -M$(NAME).manifest
+	$(ZEROVM) -s $(NAME).manifest
 
 clean:
 	@rm -f -v $(OBJECTS) $(NAME).nexe *.cache *.nvram *.manifest *.scp *.log

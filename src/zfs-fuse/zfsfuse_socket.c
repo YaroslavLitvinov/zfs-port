@@ -99,19 +99,10 @@ int zfsfuse_socket_create()
 	}
 #endif
 
-	/* Create the socket. */
-	sock = socket(PF_LOCAL, SOCK_STREAM, 0);
-	if(sock == -1) {
-		int err = errno;
-		cmn_err(CE_WARN, "Error creating UNIX socket: %s.", strerror(err));
-		return -1;
-	}
 
 	/* Try to create the directory, ignore errors */
 	mkdir(ZFS_SOCK_DIR, 0700);
 
-	/* Bind a name to the socket. */
-	name.sun_family = AF_LOCAL;
 	strncpy(name.sun_path, ZFS_SOCK_NAME, sizeof(name.sun_path));
 
 	name.sun_path[sizeof(name.sun_path) - 1] = '\0';
@@ -119,6 +110,27 @@ int zfsfuse_socket_create()
 	size = SUN_LEN(&name);
 
 	unlink(ZFS_SOCK_NAME);
+
+
+#ifdef __native_client__
+	/*sockets not supported for now*/
+	sock = open(ZFS_SOCK_NAME, O_CREAT|O_RDWR );
+	if(sock == -1) {
+	    int err = errno;
+	    cmn_err(CE_WARN, "Error creating file - pseudo socket: %s.", strerror(err));
+	    return -1;
+	}
+
+#else
+	/* Create the socket. */
+	sock = socket(PF_LOCAL, SOCK_STREAM, 0);
+	if(sock == -1) {
+		int err = errno;
+		cmn_err(CE_WARN, "Error creating UNIX socket: %s.", strerror(err));
+		return -1;
+	}
+	/* Bind a name to the socket. */
+	name.sun_family = AF_LOCAL;
 
 	if(bind(sock, &name, size) != 0) {
 		int err = errno;
@@ -131,6 +143,8 @@ int zfsfuse_socket_create()
 		cmn_err(CE_WARN, "Listening error on UNIX socket %s: %s.", ZFS_SOCK_NAME, strerror(err));
 		return -1;
 	}
+
+#endif //__native_client__
 
 	avl_create(&fd_avl, zfsfuse_fd_compare, sizeof(file_t), offsetof(file_t, f_node));
 

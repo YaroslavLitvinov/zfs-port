@@ -22,7 +22,7 @@
 #include <string.h>
 #include <alloca.h>
 
-#include "path_utils.h"
+#include <helpers/path_utils.h>
 #include "lowlevel_filesystem.h"
 #include "cached_lookup.h"
 
