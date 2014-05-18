@@ -171,7 +171,7 @@ errout:
 
 static void* storage_create_thread(void* obj){
 	(void)obj;
-	create_storage("/home/zvm/zfs.cow", "file", "/file");
+	create_storage("/dev/ztest.0a", "file", "/file");
 	return NULL;
 }
 
@@ -196,7 +196,6 @@ int main(int argc, char *argv[])
 #ifndef __native_client__
 	struct fuse_operations* fuse_op = CONSTRUCT_L(FUSE_OPERATIONS)(s_vfs);
 	assert(fuse_op);
-	//fusermount -u zfs-fuse/mountpoint; mkdir -p zfs-fuse/mountpoint; rm ~/zfs.cow -f; dd count=1024 bs=65536 if=/dev/zero of=~/zfs.cow &> /dev/null	
 	//gdb --annotate=3 --args zfs-fuse/zfs-fuse -s -odirect_io -d  /home/zvm/git/zfs-prezerovm/src/zfs-fuse/mountpoint
 	ret = fuse_main(argc, argv, fuse_op);
 	do_exit();

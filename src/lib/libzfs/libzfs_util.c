@@ -568,14 +568,6 @@ libzfs_init(void)
 		return (NULL);
 	}
 
-	if ((hdl->libzfs_mnttab = setmntent(MNTTAB, "r")) == NULL) {
-		(void) close(hdl->libzfs_fd);
-		free(hdl);
-		return (NULL);
-	}
-
-	hdl->libzfs_sharetab = fopen("/etc/dfs/sharetab", "r");
-
 	zfs_prop_init();
 	zpool_prop_init();
 

@@ -35,6 +35,7 @@
 
 #include "zfs_ioctl.h"
 #include "zfsfuse_socket.h"
+#include "zrt/sock_emu.h"
 #include "util.h"
 
 #define MAX_CONNECTIONS 100
@@ -78,8 +79,7 @@ int cmd_mount_req(int sock, zfsfuse_cmd_t *cmd)
 		fprintf(stderr, "mount request: \"%s\", \"%s\", \"%i\", \"%s\"\n", spec, dir, cmd->cmd_u.mount_req.mflag, opt);
 #endif
 		uint32_t ret = do_mount(spec, dir, cmd->cmd_u.mount_req.mflag, opt);
-		if(write(sock, &ret, sizeof(uint32_t)) != sizeof(uint32_t))
-			error = B_TRUE;
+		write_sock_emu(&ret, sizeof(uint32_t));
 	}
 	if(opt != NULL) free(opt);
 	if(dir != NULL) free(dir);
@@ -90,104 +90,35 @@ int cmd_mount_req(int sock, zfsfuse_cmd_t *cmd)
 
 void *listener_loop(void *arg)
 {
-	int *ioctl_fd = (int *) arg;
+    int *ioctl_fd = (int *) arg;
+    {
+	/* Handle request */
 
-	struct pollfd fds[MAX_CONNECTIONS];
-
-	fds[0].fd = *ioctl_fd;
-	fds[0].events = POLLIN;
-
-	int nfds = 1;
-
-	while(!exit_listener) {
-		/* Poll all sockets with a 1 second timeout */
-		int ret = poll(fds, nfds, 1000);
-		if(ret == 0 || (ret == -1 && errno == EINTR))
-			continue;
-
-		if(ret == -1) {
-			perror("poll");
-			break;
-		}
-
-		int oldfds = nfds;
-
-		for(int i = 0; i < oldfds; i++) {
-			short rev = fds[i].revents;
-
-			if(rev == 0)
-				continue;
-
-			fds[i].revents = 0;
-
-			ASSERT((rev & POLLNVAL) == 0);
-
-			if(!(rev & POLLIN) && !(rev & POLLERR) && !(rev & POLLHUP))
-				continue;
-
-			if(i == 0) {
-				/* Receive a new connection */
-
-				int sock = accept(*ioctl_fd, NULL, NULL);
-				if(sock == -1) {
-					perror("accept");
-					continue;
-				}
-
-				if(nfds == MAX_CONNECTIONS) {
-					fprintf(stderr, "Warning: connection limit reached (%i), closing connection.\n", MAX_CONNECTIONS);
-					close(sock);
-					continue;
-				}
-
-				fds[nfds].fd = sock;
-				fds[nfds].events = POLLIN;
-				fds[nfds].revents = 0;
-				nfds++;
-			} else {
-				/* Handle request */
-
-				zfsfuse_cmd_t cmd;
-				int sock = fds[i].fd;
-				if(zfsfuse_socket_read_loop(sock, &cmd, sizeof(zfsfuse_cmd_t)) == -1) {
-					close(sock);
-					fds[i].fd = -1;
-					continue;
-				}
-
-				switch(cmd.cmd_type) {
-					case IOCTL_REQ:
-						if(cmd_ioctl_req(sock, &cmd) != 0) {
-							close(sock);
-							fds[i].fd = -1;
-							continue;
-						}
-						break;
-					case MOUNT_REQ:
-						if(cmd_mount_req(sock, &cmd) != 0) {
-							close(sock);
-							fds[i].fd = -1;
-							continue;
-						}
-						break;
-					default:
-						abort();
-						break;
-				}
-			}
-		}
-
-		/* Free file descriptors that are -1 */
-		int write_ptr = 0;
-		for(int read_ptr = 0; read_ptr < nfds; read_ptr++) {
-			if(fds[read_ptr].fd == -1)
-				continue;
-			if(read_ptr != write_ptr)
-				fds[write_ptr] = fds[read_ptr];
-			write_ptr++;
-		}
-		nfds = write_ptr;
+	zfsfuse_cmd_t cmd;
+	int sock = *ioctl_fd;
+	if(zfsfuse_socket_read_loop(sock, &cmd, sizeof(zfsfuse_cmd_t)) == -1) {
+	    close(sock);
+	    *ioctl_fd = -1;
 	}
 
-	return NULL;
+	switch(cmd.cmd_type) {
+	case IOCTL_REQ:
+	    if(cmd_ioctl_req(sock, &cmd) != 0) {
+		close(sock);
+		*ioctl_fd = -1;
+	    }
+	    break;
+	case MOUNT_REQ:
+	    if(cmd_mount_req(sock, &cmd) != 0) {
+		close(sock);
+		*ioctl_fd = -1;
+	    }
+	    break;
+	default:
+	    abort();
+	    break;
+	}
+    }
+
+    return NULL;
 }

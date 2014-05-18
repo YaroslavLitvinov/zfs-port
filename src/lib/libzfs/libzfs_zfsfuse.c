@@ -36,6 +36,7 @@
 
 #ifdef __native_client__
 #include "zfs_ioctl.h"
+#include "zrt/sock_emu.h"
 #endif //__native_client__
 
 #include "libzfs_impl.h"
@@ -47,6 +48,19 @@ int zfsfuse_open(const char *pathname, int flags)
 	int sock;
 	size_t size;
 
+	strncpy(name.sun_path, pathname, sizeof(name.sun_path));
+	name.sun_path[sizeof(name.sun_path) - 1] = '\0';
+
+#ifdef __native_client__
+	/*sockets not supported for now*/
+	sock = open(name.sun_path, O_CREAT|O_RDWR );
+	if(sock == -1) {
+	    int err = errno;
+	    cmn_err(CE_WARN, "Error creating file - pseudo socket: %s.", strerror(err));
+	    return -1;
+	}
+
+#else
 	/* Create the socket. */
 	sock = socket(PF_LOCAL, SOCK_STREAM, 0);
 	if(sock == -1) {
@@ -56,9 +70,6 @@ int zfsfuse_open(const char *pathname, int flags)
 
 	/* Bind a name to the socket. */
 	name.sun_family = AF_LOCAL;
-	strncpy(name.sun_path, pathname, sizeof(name.sun_path));
-
-	name.sun_path[sizeof(name.sun_path) - 1] = '\0';
 
 	size = SUN_LEN(&name);
 
@@ -69,7 +80,7 @@ int zfsfuse_open(const char *pathname, int flags)
 			fprintf(stderr, "Please make sure that the zfs-fuse daemon is running.\n");
 		return -1;
 	}
-
+#endif //__native_client__
 	return sock;
 }
 
@@ -83,7 +94,7 @@ int zfsfuse_ioctl_read_loop(int fd, void *buf, int bytes)
 	int left_bytes = bytes;
 
 	while(left_bytes > 0) {
-		int ret = recvfrom(fd, ((char *) buf) + read_bytes, left_bytes, 0, NULL, NULL);
+		int ret = read_sock_emu(((char *) buf) + read_bytes, left_bytes);
 		if(ret == 0) {
 			fprintf(stderr, "zfsfuse_ioctl_read_loop(): file descriptor closed\n");
 			errno = EIO;
@@ -92,7 +103,6 @@ int zfsfuse_ioctl_read_loop(int fd, void *buf, int bytes)
 		if(ret == -1) {
 			if(errno == EINTR)
 				continue;
-// 			perror("recvfrom");
 			return -1;
 		}
 		else{
@@ -148,8 +158,7 @@ int zfsfuse_ioctl(int fd, int32_t request, void *arg)
 	cmd.cmd_u.ioctl_req.cmd = request;
 	cmd.cmd_u.ioctl_req.arg = (uint64_t)(uintptr_t) arg;
 
-	if(write(fd, &cmd, sizeof(zfsfuse_cmd_t)) != sizeof(zfsfuse_cmd_t))
-		return -1;
+	write_sock_emu(&cmd, sizeof(zfsfuse_cmd_t));
 
 	for(;;) {
 		if(zfsfuse_ioctl_read_loop(fd, &cmd, sizeof(zfsfuse_cmd_t)) != 0)
@@ -160,8 +169,7 @@ int zfsfuse_ioctl(int fd, int32_t request, void *arg)
 				errno = cmd.cmd_u.ioctl_ans_ret;
 				return errno;
 			case COPYIN_REQ:
-				if(write(fd, (void *)(uintptr_t) cmd.cmd_u.copy_req.ptr, cmd.cmd_u.copy_req.size) != cmd.cmd_u.copy_req.size)
-					return -1;
+			    write_sock_emu((void *)(uintptr_t) cmd.cmd_u.copy_req.ptr, cmd.cmd_u.copy_req.size);
 				break;
 			case COPYINSTR_REQ: ;
 				zfsfuse_cmd_t ans = { 0 };
@@ -174,12 +182,8 @@ int zfsfuse_ioctl(int fd, int32_t request, void *arg)
 				} else
 					ans.cmd_u.copy_ans.lencopied = length;
 
-				if(write(fd, &ans, sizeof(zfsfuse_cmd_t)) != sizeof(zfsfuse_cmd_t))
-					return -1;
-
-				if(write(fd, (void *)(uintptr_t) cmd.cmd_u.copy_req.ptr, ans.cmd_u.copy_ans.lencopied) != ans.cmd_u.copy_ans.lencopied)
-					return -1;
-
+				write_sock_emu(&ans, sizeof(zfsfuse_cmd_t));
+				write_sock_emu((void *)(uintptr_t) cmd.cmd_u.copy_req.ptr, ans.cmd_u.copy_ans.lencopied);
 				break;
 			case COPYOUT_REQ:
 				if(zfsfuse_ioctl_read_loop(fd, (void *)(uintptr_t) cmd.cmd_u.copy_req.ptr, cmd.cmd_u.copy_req.size) != 0)
@@ -215,17 +219,10 @@ int zfsfuse_mount(libzfs_handle_t *hdl, const char *spec, const char *dir, int m
 	cmd.cmd_u.mount_req.mflag = mflag;
 	cmd.cmd_u.mount_req.optlen = optlen;
 
-	if(write(hdl->libzfs_fd, &cmd, sizeof(zfsfuse_cmd_t)) != sizeof(zfsfuse_cmd_t))
-		return -1;
-
-	if(write(hdl->libzfs_fd, spec, speclen) != speclen)
-		return -1;
-
-	if(write(hdl->libzfs_fd, dir, dirlen) != dirlen)
-		return -1;
-
-	if(write(hdl->libzfs_fd, optptr, optlen) != optlen)
-		return -1;
+	write_sock_emu(&cmd, sizeof(zfsfuse_cmd_t));
+	write_sock_emu(spec, speclen);
+	write_sock_emu(dir, dirlen);
+	write_sock_emu(optptr, optlen);
 
 	uint32_t error;
 

@@ -47,14 +47,14 @@ config:
 	mkdir trace -p
 	touch $(NAME).pipe
 #genmanifest
-	TIMEOUT=100 \
+	TIMEOUT=1000 \
 	ABS_PATH=$(CURDIR) \
 	NAME=$(NAME) \
 	CHANNELS_INCLUDE=channels.manifest.include \
 	$(PROJ_ROOT)/template.sh $(PROJ_ROOT)/manifest.template > $(NAME).manifest
 #gennvram
 	SECONDS=1337012520 \
-	VERBOSITY=1 \
+	VERBOSITY=4 \
 	$(PROJ_ROOT)/template.sh $(PROJ_ROOT)/nvram.template  > $(NAME).nvram
 #gen gdb script
 	NEXE_PATH=$(CURDIR)/$(NAME).nexe \
