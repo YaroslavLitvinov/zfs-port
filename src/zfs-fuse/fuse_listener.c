@@ -23,6 +23,7 @@
  * Use is subject to license terms.
  */
 
+#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -32,7 +33,6 @@
 #include <sys/disp.h>
 #include <sys/kmem.h>
 #include <errno.h>
-#include <pthread.h>
 
 #include "fuse.h"
 #include "fuse_listener.h"

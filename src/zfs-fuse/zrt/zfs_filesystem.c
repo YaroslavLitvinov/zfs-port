@@ -44,10 +44,11 @@
 
 #include <string.h>
 
+#include <fs/open_file_description.h>
+#include <fs/dirent_engine.h>
+
 #include "zfs_filesystem.h"
-#include "open_file_description.h"
 #include "lowlevel_filesystem.h"
-#include "dirent_engine.h"
 
 #include <sys/mode.h> //VTTOIF
 #include <sys/zfs_vfsops.h> //zfsvfs_t
@@ -56,7 +57,6 @@
 #include <sys/statvfs.h> //statvfs64
 #include <sys/cred_impl.h> //struct cred, cred_t
 #include <sys/cred.h> //cred_t
-
 
 #define INVERT_SIGN( errcode ) -(errcode)
 

@@ -42,6 +42,7 @@
 #include <sys/fs/zfs.h>
 
 #include "zfsfuse_socket.h"
+#include "zrt/sock_emu.h"
 
 #define LOCKDIR "/var/lock/zfs"
 #define LOCKFILE LOCKDIR "/zfs_lock"
@@ -113,8 +114,6 @@ int zfsfuse_socket_create()
 
 
 #ifdef __native_client__
-	test_sock_emu();
-
 	/*sockets not supported for now*/
 	sock = open(ZFS_SOCK_NAME, O_CREAT|O_RDWR );
 	if(sock == -1) {
@@ -172,7 +171,7 @@ int zfsfuse_socket_read_loop(int fd, void *buf, int bytes)
 	int left_bytes = bytes;
 
 	while(left_bytes > 0) {
-	    int ret = read_sock_emu(((char *) buf) + read_bytes, left_bytes);
+	    int ret = read_sock_emu(fd, ((char *) buf) + read_bytes, left_bytes);
 	    if(ret == 0)
 		return -1;
 	    
@@ -200,7 +199,7 @@ int zfsfuse_socket_ioctl_write(int fd, int ret)
 	cmd.cmd_type = IOCTL_ANS;
 	cmd.cmd_u.ioctl_ans_ret = ret;
 
-	write_sock_emu(&cmd, sizeof(zfsfuse_cmd_t));
+	write_sock_emu(fd, (const char *)&cmd, sizeof(zfsfuse_cmd_t));
 
 	return 0;
 }
@@ -221,7 +220,7 @@ int xcopyin(const void *src, void *dest, size_t size)
 	cmd.cmd_u.copy_req.ptr = (uint64_t)(uintptr_t) src;
 	cmd.cmd_u.copy_req.size = size;
 	
-	write_sock_emu(&cmd, sizeof(zfsfuse_cmd_t));
+	write_sock_emu(cur_fd, (const char *)&cmd, sizeof(zfsfuse_cmd_t));
 
 	if(zfsfuse_socket_read_loop(cur_fd, dest, size) != 0)
 		return EFAULT;
@@ -250,7 +249,7 @@ int copyinstr(const char *from, char *to, size_t max, size_t *len)
 	cmd.cmd_u.copy_req.ptr = (uint64_t)(uintptr_t) from;
 	cmd.cmd_u.copy_req.size = max;
 
-	write_sock_emu(&cmd, sizeof(zfsfuse_cmd_t));
+	write_sock_emu(cur_fd, (const char *)&cmd, sizeof(zfsfuse_cmd_t));
 	if(zfsfuse_socket_read_loop(cur_fd, &cmd, sizeof(zfsfuse_cmd_t)) != 0)
 		return EFAULT;
 
@@ -286,8 +285,8 @@ int xcopyout(const void *src, void *dest, size_t size)
 	cmd.cmd_u.copy_req.ptr = (uint64_t)(uintptr_t) dest;
 	cmd.cmd_u.copy_req.size = size;
 
-	write_sock_emu(&cmd, sizeof(zfsfuse_cmd_t));
-	write_sock_emu(src, size);
+	write_sock_emu(cur_fd, (const char *)&cmd, sizeof(zfsfuse_cmd_t));
+	write_sock_emu(cur_fd, src, size);
 	return 0;
 }
 
@@ -312,7 +311,7 @@ file_t *getf(int fd)
 	cmd.cmd_type = GETF_REQ;
 	cmd.cmd_u.getf_req_fd = fd;
 
-	write_sock_emu(&cmd, sizeof(zfsfuse_cmd_t));
+	write_sock_emu(fd, &cmd, sizeof(zfsfuse_cmd_t));
 
 retry: ;
 	/* man cmsg(3) */

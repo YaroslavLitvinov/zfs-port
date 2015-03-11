@@ -76,7 +76,9 @@
 #include <sys/attr.h>
 #include <sys/zfs_debug.h>
 
-#include "zrt/dirent_engine.h"
+#include <fs/dirent_engine.h>
+#include "zrt/zrt_defines.h"
+
 /*
  * Programming rules.
  *

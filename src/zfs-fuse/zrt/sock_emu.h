@@ -25,14 +25,8 @@
  replaced by direct calls coz we running such code in single thread
  and single app.*/
 
-/*Use memory buffer to emulate socket read/write*/
-#define SOCKET_MAX_MEMORY 1024*1024*50
 
-
-void write_sock_emu(const char* data, int size);
-int  read_sock_emu(char* data, int size);
-
-/*sock emu tests*/
-void test_sock_emu();
+void write_sock_emu(int fd, const char* data, int size);
+int  read_sock_emu(int fd, char* data, int size);
 
 #endif //__SOCK_EMU_H__

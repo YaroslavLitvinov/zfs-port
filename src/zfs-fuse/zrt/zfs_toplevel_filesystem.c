@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+//#ifndef FUSE_ENABLED
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -24,24 +25,21 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <assert.h>
-
-extern "C" {
-#include "zrtlog.h"
-#include "zrt_helper_macros.h"
-}
 
 #include "lowlevel_filesystem.h"
 #include "zfs_toplevel_filesystem.h"
 
-extern "C" {
 #include <fs/mounts_interface.h>
+#include <fs/handle_allocator.h> //struct HandleAllocator, struct HandleItem
+#include <fs/open_file_description.h> //struct OpenFilesPool, struct OpenFileDescription
+#include <fs/dirent_engine.h>
+
 #include <helpers/path_utils.h>
-#include "handle_allocator.h" //struct HandleAllocator, struct HandleItem
-#include "open_file_description.h" //struct OpenFilesPool, struct OpenFileDescription
-#include "dirent_engine.h"
+
 #include "cached_lookup.h"
-}
+
+#define SET_ERRNO(err) errno=err
+#define CHECK_FLAG(flags, flag) ( (flags & (flag)) == (flag)? 1 : 0)
 
 #define GET_DESCRIPTOR_ENTRY_CHECK(fs, fd, entry_p)	\
     entry_p = (fs)->handle_allocator->entry( (fd) );	\
@@ -510,7 +508,7 @@ static off_t toplevel_lseek(struct MountsPublicInterface* this_, int fd, off_t o
     int ret;
     struct ZfsTopLevelFs* fs = (struct ZfsTopLevelFs*)this_;
     const struct HandleItem* entry;
-    const struct OpenFileDescription* ofd = fs->open_files_pool->ofd(fd);
+    const struct OpenFileDescription* ofd = fs->handle_allocator->ofd(fd);
     struct stat st;
 
     CHECK_FUNC_ENSURE_EXIST(fs, stat);
@@ -536,7 +534,7 @@ static off_t toplevel_lseek(struct MountsPublicInterface* this_, int fd, off_t o
 	if (len == -1) {
 	    return -1;
 	}
-	next = static_cast<size_t>(len) + offset;
+	next = (size_t)len + offset;
 	break;
     default:
 	SET_ERRNO(EINVAL);
@@ -589,6 +587,7 @@ static int toplevel_open(struct MountsPublicInterface* this_, const char* path, 
 	/*ask for file descriptor in handle allocator*/
 	ret = fs->handle_allocator->allocate_handle( this_, 
 						     inode,
+                                                     parent_inode,
 						     open_file_description_id);
 	if ( ret < 0 ){
 	    /*it's hipotetical but possible case if amount of open files 
@@ -611,8 +610,6 @@ static int toplevel_fcntl(struct MountsPublicInterface* this_, int fd, int cmd, 
     int ret;
     struct ZfsTopLevelFs* fs = (struct ZfsTopLevelFs*)this_;
     const struct HandleItem* entry;
-
-    ZRT_LOG(L_INFO, "cmd=%s", STR_FCNTL_CMD(cmd));
 
     SET_ERRNO(ENOSYS);
     return -1;
@@ -714,8 +711,6 @@ static int toplevel_ftruncate_size(struct MountsPublicInterface* this_, int fd, 
     int flags = ofd->flags & O_ACCMODE;
     /*check if file was not opened for writing*/
     if ( flags!=O_WRONLY && flags!=O_RDWR ){
-	ZRT_LOG(L_ERROR, "file open flags=%s not allow truncate", 
-		STR_FILE_OPEN_FLAGS(flags));
 	SET_ERRNO( EINVAL );
 	return -1;
     }
@@ -868,7 +863,7 @@ static struct MountsPublicInterface KTopLevelMountWraper = {
     toplevel_dup,
     toplevel_dup2,
     toplevel_link,
-    EUserFsId,
+	NULL, /*utime*/
     NULL
 };
 
@@ -890,4 +885,4 @@ CONSTRUCT_L(ZFS_TOPLEVEL_FILESYSTEM)( struct HandleAllocator* handle_allocator,
     return (struct MountsPublicInterface*)this_;
 }
 
-
+//#endif /*FUSE_ENABLED*/

@@ -28,7 +28,6 @@
 #include <string.h>
 #include <signal.h>
 #include <getopt.h>
-#include <assert.h>
 
 #include "util.h"
 
@@ -54,17 +53,19 @@
 
 #include <libzfs.h>
 
-#include "zfs_comutil.h"
-#include "zrt/zfs_filesystem.h"
-#include "zrt/zfs_toplevel_filesystem.h"
-#include "zrt/open_file_description.h"
-#include "new_zpool_util.h"
-#include "zrt/handle_allocator.h"
-#include "zrt/dirent_engine.h"
-#include "zrt/zfs_mounts.h"
-
+#include <fs/open_file_description.h>
+#include <fs/handle_allocator.h>
+#include <fs/dirent_engine.h>
 #include <fs/user_space_fs.h>
 #include <fs/mounts_interface.h> //struct MountsPublicInterface
+
+
+#include "zfs_comutil.h"
+#include "zfs_filesystem.h"
+#include "zfs_toplevel_filesystem.h"
+#include "new_zpool_util.h"
+#include "zfs_mounts.h"
+#include "zfs_operations.h"
 
 pthread_t storage_create_thread_id;
 //pthread_t listener_thread_id;
@@ -171,11 +172,11 @@ errout:
 
 static void* storage_create_thread(void* obj){
 	(void)obj;
-	create_storage("/dev/ztest.0a", "file", "/file");
+	create_storage("/dev/zfs", "file", "/file");
 	return NULL;
 }
 
-int main(int argc, char *argv[])
+int zfsfuse_main(int argc, char *argv[])
 {
 	int ret;
 
@@ -193,18 +194,30 @@ int main(int argc, char *argv[])
 	assert(0 == ret);
 	assert(s_vfs);
 
-#ifndef __native_client__
+#define FUSE_ENABLED 1
+
+#ifdef FUSE_ENABLED
+        /*Interface #1:/*
+         /*fuse mount interface, fuse interface implementation: struct
+         fuse_operation. Use this interface as stantard interface
+         instead of MountsPublicInterface
+        */
 	struct fuse_operations* fuse_op = CONSTRUCT_L(FUSE_OPERATIONS)(s_vfs);
 	assert(fuse_op);
 	//gdb --annotate=3 --args zfs-fuse/zfs-fuse -s -odirect_io -d  /home/zvm/git/zfs-prezerovm/src/zfs-fuse/mountpoint
 	ret = fuse_main(argc, argv, fuse_op);
-	do_exit();
-	return ret;
-#endif
-
+#else
+        /*Interface #2:*/
+        /*zrt old-style mount, can be used as backup for another mount
+          method not used instead of fuse_operations interface.
+        Before */
 	struct MountsPublicInterface* zfs_mounts = CONSTRUCT_L(ZFS_MOUNTS)(s_vfs);
 	assert(zfs_mounts);
 	ret = mount_user_fs(zfs_mounts, "/zfs");
+#endif
+
+        /*The return code is expected to be ret==0 forever. Assert it
+          if the return code is bad.*/
 	assert(ret==0);
 
 	struct stat st;

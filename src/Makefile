@@ -1,5 +1,6 @@
 include Makefile.env
 
+PREFIX?="/opt/zerovm"
 LIBPATH=lib
 CFLAGS +=-ggdb -O2  $(INCLUDES)
 
@@ -13,7 +14,11 @@ all:
 	@make -C$(LIBPATH)/libzfs
 	@make libzfscommon-kernel.a -C$(LIBPATH)/libzfscommon
 	@make libzpool-kernel.a     -C$(LIBPATH)/libzpool
+	@make -C$(LIBPATH)/../zfs-fuse all
 
 clean:
 	@$(CLEAN)
+	@make -C$(LIBPATH)/../zfs-fuse clean
 
+install:
+	@make -C$(LIBPATH)/../zfs-fuse install

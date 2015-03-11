@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
-#include "zrt/zfs_filesystem.h"
-#include "zrt/zfs_toplevel_filesystem.h"
-#include "zrt/open_file_description.h"
-#include "zrt/lowlevel_filesystem.h"
-#include "zrt/handle_allocator.h"
-#include "zrt/dirent_engine.h"
+#include <fs/open_file_description.h>
+#include <fs/handle_allocator.h>
+#include <fs/dirent_engine.h>
+
+#include "zfs_filesystem.h"
+#include "zfs_toplevel_filesystem.h"
+#include "lowlevel_filesystem.h"
 #include "cached_lookup.h"
 
 extern vfs_t*  s_vfs;

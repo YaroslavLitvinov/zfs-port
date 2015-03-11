@@ -31,11 +31,10 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include "fuse.h"
+#include <fuse/fuse.h>
 
 #include "zfs_ioctl.h"
 #include "zfsfuse_socket.h"
-#include "zrt/sock_emu.h"
 #include "util.h"
 
 #define MAX_CONNECTIONS 100
@@ -79,7 +78,7 @@ int cmd_mount_req(int sock, zfsfuse_cmd_t *cmd)
 		fprintf(stderr, "mount request: \"%s\", \"%s\", \"%i\", \"%s\"\n", spec, dir, cmd->cmd_u.mount_req.mflag, opt);
 #endif
 		uint32_t ret = do_mount(spec, dir, cmd->cmd_u.mount_req.mflag, opt);
-		write_sock_emu(&ret, sizeof(uint32_t));
+		write_sock_emu(sock, &ret, sizeof(uint32_t));
 	}
 	if(opt != NULL) free(opt);
 	if(dir != NULL) free(dir);

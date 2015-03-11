@@ -19,6 +19,8 @@
 #ifndef __ZFS_TOPLEVEL_FILESYSTEM_H__
 #define __ZFS_TOPLEVEL_FILESYSTEM_H__
 
+//#ifndef FUSE_ENABLED
+
 #include <fs/mounts_interface.h> //struct MountsPublicInterface
 
 #include "zrt_defines.h" //CONSTRUCT_L
@@ -26,23 +28,17 @@
 /*name of constructor*/
 #define ZFS_TOPLEVEL_FILESYSTEM zfs_toplevel_filesystem_construct
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-    
-    struct HandleAllocator;
-    struct OpenFilesPool;
-    struct CachedLookupPublicInterface;
+struct CachedLookupPublicInterface;
+struct HandleAllocator;
+struct OpenFilesPool;
 
-    struct MountsPublicInterface* 
-    zfs_toplevel_filesystem_construct( struct HandleAllocator* handle_allocator,
+struct MountsPublicInterface* 
+zfs_toplevel_filesystem_construct( struct HandleAllocator* handle_allocator,
 				       struct OpenFilesPool* open_files_pool,
 				       struct CachedLookupPublicInterface* cached_lookup,
 				       struct LowLevelFilesystemPublicInterface* lowlevelfs);
-    
-#ifdef __cplusplus
-}
-#endif
 
+
+//#endif /*FUSE_ENABLED*/
 
 #endif /* __ZFS_TOPLEVEL_FILESYSTEM_H__ */

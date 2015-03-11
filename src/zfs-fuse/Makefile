@@ -10,7 +10,7 @@ CFLAGS += \
 -I$(PROJ_ROOT)/lib/libumem/include \
 -I$(PROJ_ROOT)/lib/libzfscommon/include \
 -I$(PROJ_ROOT)/lib/libsolkerncompat/include \
--I. 
+-Izrt -I. 
 
 LD_LIBRARIES=-lz -lrt -lcontext -lm
 LDLIBZPOOL_FLAGS=-L$(PROJ_ROOT)/lib/libzpool -lzpool-kernel
@@ -37,11 +37,16 @@ $(LDLIBZPOOL_FLAGS) \
 $(LD_LIBRARIES)
 #include twice some libs to solve unresolved externals from libumem
 
+#all: $(NAME).nexe config file launch
+all: lib
 
-all: $(NAME).nexe config file launch
+lib: lib$(NAME).a
 
 $(NAME).nexe: $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS)
+
+lib$(NAME).a: $(OBJECTS)
+	$(AR) rcs $@ $^
 
 config:
 	mkdir trace -p
@@ -65,6 +70,20 @@ file:
 
 launch:
 	$(ZEROVM) -s $(NAME).manifest
+
+install:
+#based on ZVM_PREFIX, ARCH
+	install -d $(INSTALL_INCLUDE_DIR)/ $(INSTALL_LIB_DIR)/zfsfuse
+	install -m 0644 -T ./fuse/zfsfuse.h $(INSTALL_INCLUDE_DIR)/fuse/zfs.h
+	install -m 0644 libzfs-fuse.a $(INSTALL_LIB_DIR)
+	install -m 0644 ../lib/libnvpair/libnvpair-kernel.a $(INSTALL_LIB_DIR)
+	install -m 0644 ../lib/libumem/libumem.a $(INSTALL_LIB_DIR)
+	install -m 0644 ../lib/libzfs/libzfs.a $(INSTALL_LIB_DIR)
+	install -m 0644 ../lib/libavl/libavl.a $(INSTALL_LIB_DIR)
+	install -m 0644 ../lib/libsolkerncompat/libsolkerncompat.a $(INSTALL_LIB_DIR)
+	install -m 0644 ../lib/libzfscommon/libzfscommon-kernel.a $(INSTALL_LIB_DIR)
+	install -m 0644 ../lib/libuutil/libuutil.a $(INSTALL_LIB_DIR)
+	install -m 0644 ../lib/libzpool/libzpool-kernel.a $(INSTALL_LIB_DIR)
 
 clean:
 	@rm -f -v $(OBJECTS) $(NAME).nexe *.cache *.nvram *.manifest *.scp *.log
